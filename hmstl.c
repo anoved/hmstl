@@ -115,12 +115,12 @@ void UnloadHeightmap(Heightmap *hm) {
 
 // Dump information about heightmap
 void ReportHeightmap(Heightmap *hm) {
-	printf("Width: %d\n", hm->width);
-	printf("Height: %d\n", hm->height);
-	printf("Size: %ld\n", hm->size);
-	printf("Min: %d\n", hm->min);
-	printf("Max: %d\n", hm->max);
-	printf("Range: %d\n", hm->range);
+	fprintf(stderr, "Width: %d\n", hm->width);
+	fprintf(stderr, "Height: %d\n", hm->height);
+	fprintf(stderr, "Size: %ld\n", hm->size);
+	fprintf(stderr, "Min: %d\n", hm->min);
+	fprintf(stderr, "Max: %d\n", hm->max);
+	fprintf(stderr, "Range: %d\n", hm->range);
 }
 
 // positive Y values are "up", rather than "down". This explains why
@@ -390,7 +390,11 @@ int main(int argc, char **argv) {
 	// 
 	LoadHeightmapFromPGM(&hm);
 	PreprocessHeightmap(&hm);
-	//ReportHeightmap(&hm);
+	
+	if (LOG) {
+		ReportHeightmap(&hm);
+	}
+	
 	HeightmapToSTL(&hm);
 	UnloadHeightmap(&hm);
 	
