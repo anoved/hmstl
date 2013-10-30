@@ -73,6 +73,9 @@ int LoadHeightmapFromPGM(Heightmap *hm) {
 		}
 	}
 	
+	// the NetPBM spec's allowance of comment lines anywhere in the header
+	// spoils the otherwise extraordinarily-simple-to-parse format.
+	
 	// read pgm header
 	// should allow comment lines in header
 	// should understand binary (P2) as well as ASCII (P5) PGM formats
@@ -80,16 +83,20 @@ int LoadHeightmapFromPGM(Heightmap *hm) {
 	fscanf(fp, "%d ", &width);
 	fscanf(fp, "%d ", &height);
 	fscanf(fp, "%d ", &depth);
-	// check that each element of header is read successfully
+	// check depth
 	
 	size = width * height;
 	
-	data = (unsigned char *)malloc(size);
-	// check that the allocation succeeded
+	if ((data = (unsigned char *)malloc(size)) == NULL) {
+		fprintf(stderr, "Cannot allocate memory for input bitmap\n");
+		return 1;
+	}
 	
-	fread(data, size, 1, fp);
-	// check that we actually got the expected number of bytes
-	
+	if (fread(data, size, 1, fp) != 1) {
+		fprintf(stderr, "Cannot read data from input bitmap\n");
+		return 1;
+	}
+		
 	if (fp != stdin) {
 		fclose(fp);
 	}
