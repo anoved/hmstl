@@ -469,6 +469,7 @@ int parseopts(int argc, char **argv) {
 				switch (optopt) {
 					case 'z':
 					case 'b':
+					case 'i':
 					case 'o':
 						fprintf(stderr, "Option -%c requires an argument.\n", optopt);
 						break;
