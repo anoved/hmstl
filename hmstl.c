@@ -34,7 +34,7 @@ int PreprocessHeightmap(Heightmap *hm) {
 		return 0;
 	}
 	
-	min = 254;
+	min = 255;
 	max = 0;
 	
 	for (i = 0; i < hm->size; i++) {
