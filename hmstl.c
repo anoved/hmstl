@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <limits.h>
 
 typedef struct {
 	
@@ -53,6 +54,95 @@ int PreprocessHeightmap(Heightmap *hm) {
 	return 1;
 }
 
+// lifted from netpbm fileio
+// return -1 on error
+char pm_getc(FILE * const file) {
+    int ich;
+    char ch;
+
+    ich = getc(file);
+    if (ich == EOF) {
+       // pm_error("EOF / read error reading a byte");
+       fprintf(stderr, "EOF/read error reading a byte\n");
+       return -1;
+	}
+    ch = (char) ich;
+    
+    if (ch == '#') {
+        do {
+			ich = getc(file);
+			if (ich == EOF) {
+				//pm_error("EOF / read error reading a byte");
+				fprintf(stderr, "EOF/read error reading a comment byte\n");
+				return -1;
+			}
+			ch = (char) ich;
+	    } while (ch != '\n' && ch != '\r');
+	}
+    return ch;
+}
+
+// returns 0 on error; >0 otherwise. (0 is a valid uint to read, but indicates a useless bitmap if given for any header value)
+unsigned int
+pm_getuint(FILE * const ifP) {
+/*----------------------------------------------------------------------------
+   Read an unsigned integer in ASCII decimal from the file stream
+   represented by 'ifP' and return its value.
+
+   If there is nothing at the current position in the file stream that
+   can be interpreted as an unsigned integer, issue an error message
+   to stderr and abort the program.
+
+   If the number at the current position in the file stream is too
+   great to be represented by an 'int' (Yes, I said 'int', not
+   'unsigned int'), issue an error message to stderr and abort the
+   program.
+-----------------------------------------------------------------------------*/
+    char ch;
+    unsigned int i;
+
+    do {
+        ch = pm_getc(ifP);
+        if (ch == -1) {
+			return 0;
+		}
+	} while (ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r');
+
+    if (ch < '0' || ch > '9') {
+		//pm_error("junk in file where an unsigned integer should be");
+        // return error
+        fprintf(stderr, "invalid character in bitmap header (should be unsigned integer)\n");
+        return 0;
+	}
+
+    i = 0;
+    do {
+        unsigned int const digitVal = ch - '0';
+
+        if (i > INT_MAX/10 - digitVal) {
+            //pm_error("ASCII decimal integer in file is "
+             //        "too large to be processed.  ");
+			// return error
+			fprintf(stderr, "integer value in bitmap header too large to process\n");
+			return 0;
+		}
+        i = i * 10 + digitVal;
+        ch = pm_getc(ifP);
+        if (ch == -1) {
+			return 0;
+		}
+    } while (ch >= '0' && ch <= '9');
+
+	// if i== 0, we've read a valid 0 value, but a bitmap with 0 width, height, or depth is useless
+	if (i == 0) {
+		fprintf(stderr, "invalid bitmap header 0 value\n");
+	}
+    return i;
+}
+
+
+
+
 // Populate a heightmap with data from the specified PGM file
 // return 0 on success, nonzero on failure
 // modifies hm width, height, size, and allocates hm data on success
@@ -75,15 +165,33 @@ int LoadHeightmapFromPGM(Heightmap *hm) {
 	
 	// the NetPBM spec's allowance of comment lines anywhere in the header
 	// spoils the otherwise extraordinarily-simple-to-parse format.
+	// examples of valid headers: http://paulbourke.net/dataformats/ppm/
 	
 	// read pgm header
 	// should allow comment lines in header
 	// should understand binary (P2) as well as ASCII (P5) PGM formats
-	fscanf(fp, "P5 ");
-	fscanf(fp, "%d ", &width);
-	fscanf(fp, "%d ", &height);
-	fscanf(fp, "%d ", &depth);
-	// check depth
+	if (fgetc(fp) != 'P' || fgetc(fp) != '5') {
+		fprintf(stderr, "Unrecognized file format; must be raw PGM (P5)\n");
+		return 1;
+	}
+	
+	if ((width = pm_getuint(fp)) == 0) {
+		return 1;
+	}
+		
+	if ((height = pm_getuint(fp)) == 0) {
+		return 1;
+	}
+	
+	if ((depth = pm_getuint(fp)) == 0) {
+		return 1;
+	}
+	
+	
+	if (depth > 255) {
+		fprintf(stderr, "Unsupported bitmap depth. Max value of 255\n");
+		return 1;
+	}
 	
 	size = width * height;
 	
