@@ -303,12 +303,8 @@ int HeightmapToSTL(Heightmap *hm) {
 	return 0;
 }
 
-// getopt example
 // https://www.gnu.org/software/libc/manual/html_node/Example-of-Getopt.html
-
-// getopt long example
-// https://www.gnu.org/software/libc/manual/html_node/Getopt-Long-Option-Example.html#Getopt-Long-Option-Example
-
+// returns 0 if options are parsed successfully; nonzero otherwise
 int parseopts(int argc, char **argv) {
 	
 	int c;
@@ -364,6 +360,9 @@ int parseopts(int argc, char **argv) {
 				return 1;
 				break;
 			default:
+				// My understand is getopt will return ? for all unrecognized options,
+				// so I'm not sure what other cases will be caught here. Perhaps just
+				// options specified in optstring that I forget to handle above...
 				fprintf(stderr, "Unexpected getopt result: %c\n", optopt);
 				return 1;
 				break;
@@ -387,7 +386,6 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 	
-	// 
 	LoadHeightmapFromPGM(&hm);
 	PreprocessHeightmap(&hm);
 	
