@@ -12,11 +12,14 @@ typedef struct {
 	
 } Heightmap;
 
-int LOG = 0;
-char *INPUT = NULL;
-char *OUTPUT = NULL;
-float ZSCALE = 1.0;
-float ZOFFSET = 1.0; // base padding - absolute amount added to scaled surface Z
+typedef struct {
+	int log;
+	char *input;
+	char *output;
+	float zscale;
+	float baseheight;
+} Settings;
+Settings CONFIG = {0, NULL, NULL, 1.0, 1.0};
 
 // Scan a loaded heightmap to determine minimum and maximum values
 // Returns 1 on success, 0 on failure
@@ -60,12 +63,12 @@ int LoadHeightmapFromPGM(Heightmap *hm) {
 	unsigned long size;
 	unsigned char *data;
 	
-	if (INPUT == NULL) {
+	if (CONFIG.input == NULL) {
 		fp = stdin;
 	}
 	else {
-		if ((fp = fopen(INPUT, "r")) == NULL) {
-			fprintf(stderr, "Cannot open input file %s\n", INPUT);
+		if ((fp = fopen(CONFIG.input, "r")) == NULL) {
+			fprintf(stderr, "Cannot open input file %s\n", CONFIG.input);
 			return 1;
 		}
 	}
@@ -180,20 +183,18 @@ void Mesh(const Heightmap *hm, FILE *fp) {
 			
 			// ABD
 			Triangle(fp, hm,
-					Ax, Ay, ZOFFSET + ZSCALE * hm->data[A],
-					Bx, By, ZOFFSET + ZSCALE * hm->data[B],
-					Dx, Dy, ZOFFSET + ZSCALE * hm->data[D]);
+					Ax, Ay, CONFIG.baseheight + CONFIG.zscale * hm->data[A],
+					Bx, By, CONFIG.baseheight + CONFIG.zscale * hm->data[B],
+					Dx, Dy, CONFIG.baseheight + CONFIG.zscale * hm->data[D]);
 			
 			// BCD
 			Triangle(fp, hm,
-					Bx, By, ZOFFSET + ZSCALE * hm->data[B],
-					Cx, Cy, ZOFFSET + ZSCALE * hm->data[C],
-					Dx, Dy, ZOFFSET + ZSCALE * hm->data[D]);
+					Bx, By, CONFIG.baseheight + CONFIG.zscale * hm->data[B],
+					Cx, Cy, CONFIG.baseheight + CONFIG.zscale * hm->data[C],
+					Dx, Dy, CONFIG.baseheight + CONFIG.zscale * hm->data[D]);
 		}
 	}
 }
-
-// all mesh z coordinates should have an offset added *after* scaling
 
 void Walls(const Heightmap *hm, FILE *fp) {
 	unsigned int row, col;
@@ -208,11 +209,11 @@ void Walls(const Heightmap *hm, FILE *fp) {
 		a = col;
 		b = col + 1;
 		Triangle(fp, hm,
-				a, 0, ZOFFSET + ZSCALE * hm->data[a],
-				b, 0, ZOFFSET + ZSCALE * hm->data[b],
+				a, 0, CONFIG.baseheight + CONFIG.zscale * hm->data[a],
+				b, 0, CONFIG.baseheight + CONFIG.zscale * hm->data[b],
 				a, 0, 0);
 		Triangle(fp, hm,
-				b, 0, ZOFFSET + ZSCALE * hm->data[b],
+				b, 0, CONFIG.baseheight + CONFIG.zscale * hm->data[b],
 				b, 0, 0,
 				a, 0, 0);
 		
@@ -220,13 +221,13 @@ void Walls(const Heightmap *hm, FILE *fp) {
 		a += bottom * hm->width;
 		b += bottom * hm->width;
 		Triangle(fp, hm,
-				col, bottom, ZOFFSET + ZSCALE * hm->data[a],
+				col, bottom, CONFIG.baseheight + CONFIG.zscale * hm->data[a],
 				col, bottom, 0,
-				col + 1, bottom, ZOFFSET + ZSCALE * hm->data[b]);
+				col + 1, bottom, CONFIG.baseheight + CONFIG.zscale * hm->data[b]);
 		Triangle(fp, hm,
 				col, bottom, 0,
 				col + 1, bottom, 0,
-				col + 1, bottom, ZOFFSET + ZSCALE * hm->data[b]);
+				col + 1, bottom, CONFIG.baseheight + CONFIG.zscale * hm->data[b]);
 	}
 	
 	// west and east walls
@@ -236,24 +237,24 @@ void Walls(const Heightmap *hm, FILE *fp) {
 		a = row * hm->width;
 		b = (row + 1) * hm->width;
 		Triangle(fp, hm,
-				0, row, ZOFFSET + ZSCALE * hm->data[a],
+				0, row, CONFIG.baseheight + CONFIG.zscale * hm->data[a],
 				0, row, 0,
-				0, row + 1, ZOFFSET + ZSCALE * hm->data[b]);
+				0, row + 1, CONFIG.baseheight + CONFIG.zscale * hm->data[b]);
 		Triangle(fp, hm,
 				0, row, 0,
 				0, row + 1, 0,
-				0, row + 1, ZOFFSET + ZSCALE * hm->data[b]);
+				0, row + 1, CONFIG.baseheight + CONFIG.zscale * hm->data[b]);
 		
 		// east wall
 		a += right;
 		b += right;
 		Triangle(fp, hm,
-				right, row, ZOFFSET + ZSCALE * hm->data[a],
+				right, row, CONFIG.baseheight + CONFIG.zscale * hm->data[a],
 				right, row + 1, 0,
 				right, row, 0);
 		Triangle(fp, hm,
-				right, row, ZOFFSET + ZSCALE * hm->data[a],
-				right, row + 1, ZOFFSET + ZSCALE * hm->data[b],
+				right, row, CONFIG.baseheight + CONFIG.zscale * hm->data[a],
+				right, row + 1, CONFIG.baseheight + CONFIG.zscale * hm->data[b],
 				right, row + 1, 0);
 	}
 	
@@ -278,12 +279,12 @@ int HeightmapToSTL(Heightmap *hm) {
 	
 	FILE *fp;
 	
-	if (OUTPUT == NULL) {
+	if (CONFIG.output == NULL) {
 		fp = stdout;
 	}
 	else {
-		if ((fp = fopen(OUTPUT, "w")) == NULL) {
-			fprintf(stderr, "Cannot open output file %s\n", OUTPUT);
+		if ((fp = fopen(CONFIG.output, "w")) == NULL) {
+			fprintf(stderr, "Cannot open output file %s\n", CONFIG.output);
 			return 1;
 		}
 	}
@@ -316,29 +317,29 @@ int parseopts(int argc, char **argv) {
 		switch (c) {
 			case 'z':
 				// Z scale (heightmap value units relative to XY)
-				if (sscanf(optarg, "%f", &ZSCALE) != 1 || ZSCALE <= 0) {
-					fprintf(stderr, "ZSCALE must be a number greater than 0.\n");
+				if (sscanf(optarg, "%f", &CONFIG.zscale) != 1 || CONFIG.zscale <= 0) {
+					fprintf(stderr, "CONFIG.zscale must be a number greater than 0.\n");
 					return 1;
 				}
 				break;
 			case 'b':
 				// Base height (default 1.0 units)
-				if (sscanf(optarg, "%f", &ZOFFSET) != 1 || ZOFFSET < 1) {
-					fprintf(stderr, "ZOFFSET must be a number greater than or equal to 1.\n");
+				if (sscanf(optarg, "%f", &CONFIG.baseheight) != 1 || CONFIG.baseheight < 1) {
+					fprintf(stderr, "BASEHEIGHT must be a number greater than or equal to 1.\n");
 					return 1;
 				}
 				break;
 			case 'o':
 				// Output file (default stdout)
-				OUTPUT = optarg;
+				CONFIG.output = optarg;
 				break;
 			case 'i':
 				// Input file (default stdin)
-				INPUT = optarg;
+				CONFIG.input = optarg;
 				break;
 			case 'v':
 				// Verbose mode (log to stderr)
-				LOG = 1;
+				CONFIG.log = 1;
 				break;
 			case '?':
 				// unrecognized option OR missing option argument
@@ -382,14 +383,14 @@ int main(int argc, char **argv) {
 	Heightmap hm = {0, 0, 0, NULL, 0, 0, 0};
 	
 	if (parseopts(argc, argv)) {
-		fprintf(stderr, "Usage: %s [-z ZSCALE] [-b BASEHEIGHT] [-i INPUT] [-o OUTPUT]\n", argv[0]);
+		fprintf(stderr, "Usage: %s [-z CONFIG.zscale] [-b BASEHEIGHT] [-i INPUT] [-o OUTPUT]\n", argv[0]);
 		return 1;
 	}
 	
 	LoadHeightmapFromPGM(&hm);
 	PreprocessHeightmap(&hm);
 	
-	if (LOG) {
+	if (CONFIG.log) {
 		ReportHeightmap(&hm);
 	}
 	
