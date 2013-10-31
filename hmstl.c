@@ -1,17 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <limits.h>
 
-typedef struct {
-	
-	unsigned int width, height;
-	unsigned long size;
-	unsigned char *data;
-	
-	unsigned char min, max, range;
-	
-} Heightmap;
+#include "heightmap.h"
 
 typedef struct {
 	int log;
@@ -22,225 +13,6 @@ typedef struct {
 	float baseheight;
 } Settings;
 Settings CONFIG = {0, 1, NULL, NULL, 1.0, 1.0};
-
-// Scan a loaded heightmap to determine minimum and maximum values
-// Returns 1 on success, 0 on failure
-// modifies hm min, max, and range on success
-int PreprocessHeightmap(Heightmap *hm) {
-	
-	unsigned long i;
-	unsigned char min, max;
-	
-	// data must be loaded before preprocessing is possible
-	if (hm->data == NULL) {
-		return 0;
-	}
-	
-	min = 255;
-	max = 0;
-	
-	for (i = 0; i < hm->size; i++) {
-		if (hm->data[i] < min) {
-			min = hm->data[i];
-		}
-		if (hm->data[i] > max) {
-			max = hm->data[i];
-		}
-	}
-	
-	hm->min = min;
-	hm->max = max;
-	hm->range = max - min;
-	
-	return 1;
-}
-
-// lifted from netpbm fileio
-// return -1 on error
-char pm_getc(FILE * const file) {
-    int ich;
-    char ch;
-
-    ich = getc(file);
-    if (ich == EOF) {
-       // pm_error("EOF / read error reading a byte");
-       fprintf(stderr, "EOF/read error reading a byte\n");
-       return -1;
-	}
-    ch = (char) ich;
-    
-    if (ch == '#') {
-        do {
-			ich = getc(file);
-			if (ich == EOF) {
-				//pm_error("EOF / read error reading a byte");
-				fprintf(stderr, "EOF/read error reading a comment byte\n");
-				return -1;
-			}
-			ch = (char) ich;
-	    } while (ch != '\n' && ch != '\r');
-	}
-    return ch;
-}
-
-// returns 0 on error; >0 otherwise. (0 is a valid uint to read, but indicates a useless bitmap if given for any header value)
-unsigned int
-pm_getuint(FILE * const ifP) {
-/*----------------------------------------------------------------------------
-   Read an unsigned integer in ASCII decimal from the file stream
-   represented by 'ifP' and return its value.
-
-   If there is nothing at the current position in the file stream that
-   can be interpreted as an unsigned integer, issue an error message
-   to stderr and abort the program.
-
-   If the number at the current position in the file stream is too
-   great to be represented by an 'int' (Yes, I said 'int', not
-   'unsigned int'), issue an error message to stderr and abort the
-   program.
------------------------------------------------------------------------------*/
-    char ch;
-    unsigned int i;
-
-    do {
-        ch = pm_getc(ifP);
-        if (ch == -1) {
-			return 0;
-		}
-	} while (ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r');
-
-    if (ch < '0' || ch > '9') {
-		//pm_error("junk in file where an unsigned integer should be");
-        // return error
-        fprintf(stderr, "invalid character in bitmap header (should be unsigned integer)\n");
-        return 0;
-	}
-
-    i = 0;
-    do {
-        unsigned int const digitVal = ch - '0';
-
-        if (i > INT_MAX/10 - digitVal) {
-            //pm_error("ASCII decimal integer in file is "
-             //        "too large to be processed.  ");
-			// return error
-			fprintf(stderr, "integer value in bitmap header too large to process\n");
-			return 0;
-		}
-        i = i * 10 + digitVal;
-        ch = pm_getc(ifP);
-        if (ch == -1) {
-			return 0;
-		}
-    } while (ch >= '0' && ch <= '9');
-
-	// if i== 0, we've read a valid 0 value, but a bitmap with 0 width, height, or depth is useless
-	if (i == 0) {
-		fprintf(stderr, "invalid bitmap header 0 value\n");
-	}
-    return i;
-}
-
-
-
-
-// Populate a heightmap with data from the specified PGM file
-// return 0 on success, nonzero on failure
-// modifies hm width, height, size, and allocates hm data on success
-int LoadHeightmapFromPGM(Heightmap *hm) {
-	
-	FILE *fp;
-	unsigned int width, height, depth; // depth only supported in unsigned char range (although I suppose we could support larger values, and scale to 8-bit range on load)
-	unsigned long size;
-	unsigned char *data;
-	
-	if (CONFIG.input == NULL) {
-		fp = stdin;
-	}
-	else {
-		if ((fp = fopen(CONFIG.input, "r")) == NULL) {
-			fprintf(stderr, "Cannot open input file %s\n", CONFIG.input);
-			return 1;
-		}
-	}
-	
-	// the NetPBM spec's allowance of comment lines anywhere in the header
-	// spoils the otherwise extraordinarily-simple-to-parse format.
-	// examples of valid headers: http://paulbourke.net/dataformats/ppm/
-	
-	// read pgm header
-	// should allow comment lines in header
-	// should understand binary (P2) as well as ASCII (P5) PGM formats
-	if (fgetc(fp) != 'P' || fgetc(fp) != '5') {
-		fprintf(stderr, "Unrecognized file format; must be raw PGM (P5)\n");
-		return 1;
-	}
-	
-	if ((width = pm_getuint(fp)) == 0) {
-		return 1;
-	}
-		
-	if ((height = pm_getuint(fp)) == 0) {
-		return 1;
-	}
-	
-	if ((depth = pm_getuint(fp)) == 0) {
-		return 1;
-	}
-	
-	
-	if (depth > 255) {
-		fprintf(stderr, "Unsupported bitmap depth. Max value of 255\n");
-		return 1;
-	}
-	
-	size = width * height;
-	
-	if ((data = (unsigned char *)malloc(size)) == NULL) {
-		fprintf(stderr, "Cannot allocate memory for input bitmap\n");
-		return 1;
-	}
-	
-	if (fread(data, size, 1, fp) != 1) {
-		fprintf(stderr, "Cannot read data from input bitmap\n");
-		return 1;
-	}
-		
-	if (fp != stdin) {
-		fclose(fp);
-	}
-	
-	hm->width = width;
-	hm->height = height;
-	hm->size = size;
-	hm->data = data;
-	
-	return 0;
-}
-
-// frees hm data if allocated, and resets other values to 0
-void UnloadHeightmap(Heightmap *hm) {
-	if (hm->data != NULL) {
-		free(hm->data);
-	}
-	
-	hm->width = 0;
-	hm->height = 0;
-	hm->size = 0;
-	hm->min = 0;
-	hm->max = 0;
-	hm->range = 0;
-}
-
-// Dump information about heightmap
-void ReportHeightmap(Heightmap *hm) {
-	fprintf(stderr, "Width: %d\n", hm->width);
-	fprintf(stderr, "Height: %d\n", hm->height);
-	fprintf(stderr, "Size: %ld\n", hm->size);
-	fprintf(stderr, "Min: %d\n", hm->min);
-	fprintf(stderr, "Max: %d\n", hm->max);
-	fprintf(stderr, "Range: %d\n", hm->range);
-}
 
 // positive Y values are "up", rather than "down". This explains why
 // I've been getting facet orientation (and object orientation) wrong.
@@ -504,22 +276,24 @@ int parseopts(int argc, char **argv) {
 }
 
 int main(int argc, char **argv) {
-	Heightmap hm = {0, 0, 0, NULL, 0, 0, 0};
+	Heightmap *hm = NULL;
 	
 	if (parseopts(argc, argv)) {
 		fprintf(stderr, "Usage: %s [-z CONFIG.zscale] [-b BASEHEIGHT] [-i INPUT] [-o OUTPUT]\n", argv[0]);
 		return 1;
 	}
 	
-	LoadHeightmapFromPGM(&hm);
-	PreprocessHeightmap(&hm);
-	
-	if (CONFIG.log) {
-		ReportHeightmap(&hm);
+	if ((hm = ReadHeightmap(CONFIG.input)) == NULL) {
+		return 1;
 	}
 	
-	HeightmapToSTL(&hm);
-	UnloadHeightmap(&hm);
+	if (CONFIG.log) {
+		DumpHeightmap(hm);
+	}
+	
+	HeightmapToSTL(hm);
+	
+	FreeHeightmap(hm);
 	
 	return 0;
 }

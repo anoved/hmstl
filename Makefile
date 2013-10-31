@@ -1,4 +1,4 @@
 
-hmstl: hmstl.c
-	gcc hmstl.c -o hmstl
+hmstl: hmstl.c heightmap.c heightmap.h
+	gcc hmstl.c heightmap.c -o hmstl
 
