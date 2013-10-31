@@ -27,7 +27,7 @@ The file `tests/scene.pgm` is a PGM version of the heightmap image displayed abo
 
 Create an STL model of the heightmap with the following command. The `-z` option is used to scale height values; an appropriate value is dependent on the resolution of your dataset.
 
-	./hmstl -z 0.25 < tests/scene.pgm > tests/scene.stl
+	./hmstl -z 0.125 < tests/scene.pgm > tests/scene.stl
 
 Here is the output displayed in [Meshlab](http://meshlab.sourceforge.net/):
 
