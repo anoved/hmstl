@@ -5,13 +5,13 @@
 #include "heightmap.h"
 
 typedef struct {
-	int log;
-	int base;
-	int ascii;
-	char *input;
-	char *output;
-	float zscale;
-	float baseheight;
+	int log; // boolean; verbose logging if true
+	int base; // boolean; output walls and bottom as well as terrain surface if true
+	int ascii; // boolean; output ASCII STL instead of binary STL if true
+	char *input; // path to input file; use stdin if NULL
+	char *output; // path to output file; use stdout if NULL
+	float zscale; // scaling factor applied to raw Z values; default 1.0
+	float baseheight; // height in STL units of base below lowest terrain (technically, offset added to scaled Z values); default and minimum 1.0
 } Settings;
 Settings CONFIG = {0, 1, 0, NULL, NULL, 1.0, 1.0};
 
