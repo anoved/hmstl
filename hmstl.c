@@ -15,23 +15,100 @@ typedef struct {
 } Settings;
 Settings CONFIG = {0, 1, 0, NULL, NULL, 1.0, 1.0};
 
-// positive Y values are "up", rather than "down". This explains why
-// I've been getting facet orientation (and object orientation) wrong.
-// Subtract all y values from height to correct without changing else.
+void StartSTL(FILE *fp, const Heightmap *hm) {
+	if (CONFIG.ascii) {
+		fprintf(fp, "solid hmstl\n");
+	}
+	else {
+		// Binary STL header consists of 80 evidently arbitrary bytes,
+		// followed by a four byte unsigned long int representing the
+		// number of triangles in the file. We should be able to pre-
+		// compute this count based on the resolution and base settings.
+		
+		char *header;
+		unsigned long facecount;
+		
+		header = (char *)calloc(1, 80);
+		fwrite(header, 80, 1, fp);
+		free(header);
+		
+		facecount = 2 * (hm->width - 1) * (hm->height - 1);
+		if (CONFIG.base) {
+			facecount += (4 * hm->width) + (4 * hm->height) - 6;
+		}
+		
+		fwrite(&facecount, 4, 1, fp);
+	}
+}
 
-void Triangle(FILE *fp, const Heightmap *hm,
-		unsigned int x1, unsigned int y1, float z1,
-		unsigned int x2, unsigned int y2, float z2,
-		unsigned int x3, unsigned int y3, float z3) {
+void EndSTL(FILE *fp) {
+	if (CONFIG.ascii) {
+		fprintf(fp, "endsolid hmstl\n");
+	}
+}
+
+void TriangleASCII(FILE *fp,
+		float nx, float ny, float nz,
+		float x1, float y1, float z1,
+		float x2, float y2, float z2,
+		float x3, float y3, float z3) {
 	
-	// imply normals from face winding
-	fprintf(fp, "facet normal 0 0 0\n");
+	fprintf(fp, "facet normal %f %f %f\n", nx, ny, nz);
 	fprintf(fp, "outer loop\n");
-	fprintf(fp, "vertex %f %f %f\n", (float)x1, (float)(hm->height - y1), z1);
-	fprintf(fp, "vertex %f %f %f\n", (float)x2, (float)(hm->height - y2), z2);
-	fprintf(fp, "vertex %f %f %f\n", (float)x3, (float)(hm->height - y3), z3);
+	fprintf(fp, "vertex %f %f %f\n", x1, y1, z1);
+	fprintf(fp, "vertex %f %f %f\n", x2, y2, z2);
+	fprintf(fp, "vertex %f %f %f\n", x3, y3, z3);
 	fprintf(fp, "endloop\n");
 	fprintf(fp, "endfacet\n");
+}
+
+void TriangleBinary(FILE *fp,
+		float nx, float ny, float nz,
+		float x1, float y1, float z1,
+		float x2, float y2, float z2,
+		float x3, float y3, float z3) {
+	
+	unsigned short attr = 0;
+	
+	fwrite(&nx, 4, 1, fp);
+	fwrite(&ny, 4, 1, fp);
+	fwrite(&nz, 4, 1, fp);
+	
+	fwrite(&x1, 4, 1, fp);
+	fwrite(&y1, 4, 1, fp);
+	fwrite(&z1, 4, 1, fp);
+	
+	fwrite(&x2, 4, 1, fp);
+	fwrite(&y2, 4, 1, fp);
+	fwrite(&z2, 4, 1, fp);
+	
+	fwrite(&x3, 4, 1, fp);
+	fwrite(&y3, 4, 1, fp);
+	fwrite(&z3, 4, 1, fp);
+	
+	fwrite(&attr, 2, 1, fp);
+}
+
+void Triangle(FILE *fp, const Heightmap *hm,
+		unsigned int x1i, unsigned int y1i, float z1,
+		unsigned int x2i, unsigned int y2i, float z2,
+		unsigned int x3i, unsigned int y3i, float z3) {
+	
+	float x1, y1, x2, y2, x3, y3;
+	float nx, ny, nz;
+	
+	x1 = (float)x1i; y1 = (float)(hm->height - y1i);
+	x2 = (float)x2i; y2 = (float)(hm->height - y2i);
+	x3 = (float)x3i; y3 = (float)(hm->height - y3i);
+	
+	// imply normals from face winding
+	nx = 0; ny = 0; nz = 0;
+	
+	if (CONFIG.ascii) {
+		TriangleASCII(fp, nx, ny, nz, x1, y1, z1, x2, y2, z2, x3, y3, z3);
+	} else {
+		TriangleBinary(fp, nx, ny, nz, x1, y1, z1, x2, y2, z2, x3, y3, z3);
+	}
 }
 
 void Mesh(const Heightmap *hm, FILE *fp) {
@@ -177,8 +254,8 @@ int HeightmapToSTL(Heightmap *hm) {
 			return 1;
 		}
 	}
-	
-	fprintf(fp, "solid mymesh\n");
+		
+	StartSTL(fp, hm);
 	
 	Mesh(hm, fp);
 	
@@ -187,7 +264,7 @@ int HeightmapToSTL(Heightmap *hm) {
 		Bottom(hm, fp);
 	}
 	
-	fprintf(fp, "endsolid mymesh\n");
+	EndSTL(fp);
 	
 	if (fp != stdout) {
 		fclose(fp);
