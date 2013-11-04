@@ -88,9 +88,9 @@ unsigned int pm_getuint(FILE * const ifP) {
 
 	i = 0;
 	do {
-		unsigned int const digitVal = ch - '0';
+		unsigned int const digitVal = (unsigned int)(ch - '0');
 		
-		if (i > INT_MAX/10 - digitVal) {
+		if (i > (unsigned int)(INT_MAX/10) - digitVal) {
 			fprintf(stderr, "integer value in bitmap header too large to process\n");
 			return 0;
 		}
@@ -224,9 +224,9 @@ void FreeHeightmap(Heightmap *hm) {
 }
 
 void DumpHeightmap(const Heightmap *hm) {
-	fprintf(stderr, "Width: %d\n", hm->width);
-	fprintf(stderr, "Height: %d\n", hm->height);
-	fprintf(stderr, "Size: %ld\n", hm->size);
+	fprintf(stderr, "Width: %u\n", hm->width);
+	fprintf(stderr, "Height: %u\n", hm->height);
+	fprintf(stderr, "Size: %lu\n", hm->size);
 	fprintf(stderr, "Min: %d\n", hm->min);
 	fprintf(stderr, "Max: %d\n", hm->max);
 	fprintf(stderr, "Range: %d\n", hm->range);
