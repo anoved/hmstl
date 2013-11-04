@@ -69,25 +69,11 @@ void TriangleBinary(FILE *fp,
 		float x2, float y2, float z2,
 		float x3, float y3, float z3) {
 	
-	unsigned short attr = 0;
+	unsigned short attributes = 0;
+	float coordinates[12] = {nx, ny, nz, x1, y1, z1, x2, y2, z2, x3, y3, z3};
 	
-	fwrite(&nx, 4, 1, fp);
-	fwrite(&ny, 4, 1, fp);
-	fwrite(&nz, 4, 1, fp);
-	
-	fwrite(&x1, 4, 1, fp);
-	fwrite(&y1, 4, 1, fp);
-	fwrite(&z1, 4, 1, fp);
-	
-	fwrite(&x2, 4, 1, fp);
-	fwrite(&y2, 4, 1, fp);
-	fwrite(&z2, 4, 1, fp);
-	
-	fwrite(&x3, 4, 1, fp);
-	fwrite(&y3, 4, 1, fp);
-	fwrite(&z3, 4, 1, fp);
-	
-	fwrite(&attr, 2, 1, fp);
+	fwrite(coordinates, 4, 12, fp);
+	fwrite(&attributes, 2, 1, fp);
 }
 
 void Triangle(FILE *fp, const Heightmap *hm,
