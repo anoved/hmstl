@@ -18,7 +18,7 @@ typedef struct {
 } Settings;
 Settings CONFIG = {0, 1, 0, NULL, NULL, 1.0, 1.0};
 
-int Facecount(const Heightmap *hm) {
+unsigned long Facecount(const Heightmap *hm) {
 	unsigned long facecount;
 	facecount = 2 * (hm->width - 1) * (hm->height - 1);
 	if (CONFIG.base) {
