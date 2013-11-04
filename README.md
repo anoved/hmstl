@@ -21,17 +21,17 @@ By default, `hmstl` expects to read a heightmap image from standard input and wi
 
 ## Example
 
-[![Test site heightmap](tests/site.png)](tests/site.pgm)
+[![Test scene heightmap](tests/scene.png)](tests/scene.pgm)
 
-The file `tests/site.pgm` is a PGM version of the heightmap image displayed above.
+The file `tests/scene.pgm` is a PGM version of the heightmap image displayed above.
 
 Create an STL model of the heightmap with the following command. The `-z` option is used to scale height values; an appropriate value is dependent on the resolution of your dataset.
 
-	./hmstl -z 0.5 < tests/site.pgm > tests/site.stl
+	./hmstl -z 0.125 < tests/scene.pgm > tests/scene.stl
 
 Here is the output displayed in [Meshlab](http://meshlab.sourceforge.net/):
 
-[![Test site STL file](tests/site-stl.png)](tests/site.stl)
+[![Test scene STL file](tests/scene-stl.png)](tests/scene.stl)
 
 ## License
 
