@@ -1,6 +1,6 @@
 # Heightmap to STL
 
-`hmstl` is a simple program to convert a grayscale heightmap image to a 3D model. The supported input heightmap image format is [raw PGM](http://netpbm.sourceforge.net/doc/pgm.html). The output format is [ASCII STL](http://www.ennex.com/~fabbers/StL.asp).
+`hmstl` is a simple program to convert a grayscale heightmap image to a 3D model. The supported input heightmap image format is [raw PGM](http://netpbm.sourceforge.net/doc/pgm.html). The output format is [STL](http://www.ennex.com/~fabbers/StL.asp).
 
 ## Build
 
@@ -17,6 +17,7 @@ By default, `hmstl` expects to read a heightmap image from standard input and wi
 - `-z SCALE` multiple heightmap values by `SCALE`. Default: `1`
 - `-b HEIGHT` set base thickness to `HEIGHT`. Default and minimum: `1`
 - `-m` surface mesh only; omits base walls and bottom
+- `-a` output ASCII STL instead of default binary STL
 - `-v` verbose mode (logs some info to standard error)
 
 ## Example
