@@ -4,6 +4,9 @@
 
 #include "heightmap.h"
 
+// must be exactly 80 characters
+#define BINARY_STL_HEADER "hmstl                                                                           "
+
 typedef struct {
 	int log; // boolean; verbose logging if true
 	int base; // boolean; output walls and bottom as well as terrain surface if true
@@ -15,28 +18,26 @@ typedef struct {
 } Settings;
 Settings CONFIG = {0, 1, 0, NULL, NULL, 1.0, 1.0};
 
+int Facecount(const Heightmap *hm) {
+	unsigned long facecount;
+	facecount = 2 * (hm->width - 1) * (hm->height - 1);
+	if (CONFIG.base) {
+		facecount += (4 * hm->width) + (4 * hm->height) - 6;
+	}
+	return facecount;
+}
+
 void StartSTL(FILE *fp, const Heightmap *hm) {
 	if (CONFIG.ascii) {
 		fprintf(fp, "solid hmstl\n");
 	}
 	else {
-		// Binary STL header consists of 80 evidently arbitrary bytes,
-		// followed by a four byte unsigned long int representing the
-		// number of triangles in the file. We should be able to pre-
-		// compute this count based on the resolution and base settings.
-		
-		char *header;
+		char header[] = BINARY_STL_HEADER;
 		unsigned long facecount;
 		
-		header = (char *)calloc(1, 80);
 		fwrite(header, 80, 1, fp);
-		free(header);
 		
-		facecount = 2 * (hm->width - 1) * (hm->height - 1);
-		if (CONFIG.base) {
-			facecount += (4 * hm->width) + (4 * hm->height) - 6;
-		}
-		
+		facecount = Facecount(hm);
 		fwrite(&facecount, 4, 1, fp);
 	}
 }
