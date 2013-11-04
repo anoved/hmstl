@@ -249,11 +249,9 @@ int HeightmapToSTL(Heightmap *hm) {
 	if (CONFIG.output == NULL) {
 		fp = stdout;
 	}
-	else {
-		if ((fp = fopen(CONFIG.output, "w")) == NULL) {
-			fprintf(stderr, "Cannot open output file %s\n", CONFIG.output);
-			return 1;
-		}
+	else if ((fp = fopen(CONFIG.output, "w")) == NULL) {
+		fprintf(stderr, "Cannot open output file %s\n", CONFIG.output);
+		return 1;
 	}
 		
 	StartSTL(fp, hm);
