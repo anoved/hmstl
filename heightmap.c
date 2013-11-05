@@ -158,23 +158,28 @@ Heightmap *ReadHeightmap(const char *path) {
 	
 	if (fgetc(fp) != 'P' || fgetc(fp) != '5') {
 		fprintf(stderr, "Unrecognized file format; must be raw PGM (P5)\n");
+		fclose(fp);
 		return NULL;
 	}
 	
 	if ((width = pm_getuint(fp)) == 0) {
+		fclose(fp);
 		return NULL;
 	}
 		
 	if ((height = pm_getuint(fp)) == 0) {
+		fclose(fp);
 		return NULL;
 	}
 	
 	if ((depth = pm_getuint(fp)) == 0) {
+		fclose(fp);
 		return NULL;
 	}
 	
 	if (depth > 255) {
 		fprintf(stderr, "Unsupported bitmap depth. Max value of 255\n");
+		fclose(fp);
 		return NULL;
 	}
 	
@@ -182,11 +187,14 @@ Heightmap *ReadHeightmap(const char *path) {
 	
 	if ((data = (unsigned char *)malloc(size)) == NULL) {
 		fprintf(stderr, "Cannot allocate memory for input bitmap\n");
+		fclose(fp);
 		return NULL;
 	}
 	
 	if (fread(data, size, 1, fp) != 1) {
 		fprintf(stderr, "Cannot read data from input bitmap\n");
+		free(data);
+		fclose(fp);
 		return NULL;
 	}
 		
@@ -196,6 +204,7 @@ Heightmap *ReadHeightmap(const char *path) {
 	
 	if ((hm = (Heightmap *)malloc(sizeof(Heightmap))) == NULL) {
 		fprintf(stderr, "Cannot allocate memory for heightmap structure\n");
+		free(data);
 		return NULL;
 	}
 	
