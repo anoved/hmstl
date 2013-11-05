@@ -275,14 +275,14 @@ int parseopts(int argc, char **argv) {
 				break;
 			case 'z':
 				// Z scale (heightmap value units relative to XY)
-				if (sscanf(optarg, "%f", &CONFIG.zscale) != 1 || CONFIG.zscale <= 0) {
+				if (sscanf(optarg, "%20f", &CONFIG.zscale) != 1 || CONFIG.zscale <= 0) {
 					fprintf(stderr, "CONFIG.zscale must be a number greater than 0.\n");
 					return 1;
 				}
 				break;
 			case 'b':
 				// Base height (default 1.0 units)
-				if (sscanf(optarg, "%f", &CONFIG.baseheight) != 1 || CONFIG.baseheight < 1) {
+				if (sscanf(optarg, "%20f", &CONFIG.baseheight) != 1 || CONFIG.baseheight < 1) {
 					fprintf(stderr, "BASEHEIGHT must be a number greater than or equal to 1.\n");
 					return 1;
 				}
