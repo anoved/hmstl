@@ -29,22 +29,29 @@ unsigned long Facecount(const Heightmap *hm) {
 
 void StartSTL(FILE *fp, const Heightmap *hm) {
 	if (CONFIG.ascii) {
-		fprintf(fp, "solid hmstl\n");
+		if (fprintf(fp, "solid hmstl\n") < 0) {
+			// write failure
+		}
 	}
 	else {
 		char header[] = BINARY_STL_HEADER;
 		unsigned long facecount;
 		
-		fwrite(header, 80, 1, fp);
+		if (fwrite(header, 80, 1, fp) != 1) {
+			// write failure
+		}
 		
 		facecount = Facecount(hm);
-		fwrite(&facecount, 4, 1, fp);
+		if (fwrite(&facecount, 4, 1, fp) != 1) {
+			// write failure
+		}
 	}
 }
 
 void EndSTL(FILE *fp) {
 	if (CONFIG.ascii) {
-		fprintf(fp, "endsolid hmstl\n");
+		if (fprintf(fp, "endsolid hmstl\n") < 0) {
+		}
 	}
 }
 
@@ -53,14 +60,20 @@ void TriangleASCII(FILE *fp,
 		float x1, float y1, float z1,
 		float x2, float y2, float z2,
 		float x3, float y3, float z3) {
-	
-	fprintf(fp, "facet normal %f %f %f\n", nx, ny, nz);
-	fprintf(fp, "outer loop\n");
-	fprintf(fp, "vertex %f %f %f\n", x1, y1, z1);
-	fprintf(fp, "vertex %f %f %f\n", x2, y2, z2);
-	fprintf(fp, "vertex %f %f %f\n", x3, y3, z3);
-	fprintf(fp, "endloop\n");
-	fprintf(fp, "endfacet\n");
+	if (fprintf(fp,
+			"facet normal %f %f %f\n"
+			"outer loop\n"
+			"vertex %f %f %f\n"
+			"vertex %f %f %f\n"
+			"vertex %f %f %f\n"
+			"endloop\n"
+			"endfacet\n",
+			nx, ny, nz,
+			x1, y1, z1,
+			x2, y2, z2,
+			x3, y3, z3) < 0) {
+		// write failure
+	}
 }
 
 void TriangleBinary(FILE *fp,
@@ -72,8 +85,13 @@ void TriangleBinary(FILE *fp,
 	unsigned short attributes = 0;
 	float coordinates[12] = {nx, ny, nz, x1, y1, z1, x2, y2, z2, x3, y3, z3};
 	
-	fwrite(coordinates, 4, 12, fp);
-	fwrite(&attributes, 2, 1, fp);
+	if (fwrite(coordinates, 4, 12, fp) != 12) {
+		// write failure
+	}
+	
+	if (fwrite(&attributes, 2, 1, fp) != 1) {
+		// write failure
+	}
 }
 
 void Triangle(FILE *fp, const Heightmap *hm,
@@ -161,14 +179,15 @@ void Walls(const Heightmap *hm, FILE *fp) {
 		// north wall
 		a = col;
 		b = col + 1;
+		// we're using a and b as xy coordinates only in this case, so cast to col/row type
 		Triangle(fp, hm,
-				a, 0, CONFIG.baseheight + CONFIG.zscale * hm->data[a],
-				b, 0, CONFIG.baseheight + CONFIG.zscale * hm->data[b],
-				a, 0, 0);
+				(unsigned int)a, 0, CONFIG.baseheight + CONFIG.zscale * hm->data[a],
+				(unsigned int)b, 0, CONFIG.baseheight + CONFIG.zscale * hm->data[b],
+				(unsigned int)a, 0, 0);
 		Triangle(fp, hm,
-				b, 0, CONFIG.baseheight + CONFIG.zscale * hm->data[b],
-				b, 0, 0,
-				a, 0, 0);
+				(unsigned int)b, 0, CONFIG.baseheight + CONFIG.zscale * hm->data[b],
+				(unsigned int)b, 0, 0,
+				(unsigned int)a, 0, 0);
 		
 		// south wall
 		a += bottom * hm->width;
