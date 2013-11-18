@@ -2,10 +2,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include <libtrix.h>
 #include "heightmap.h"
-
-// must be exactly 80 characters
-#define BINARY_STL_HEADER "hmstl                                                                           "
 
 typedef struct {
 	int log; // boolean; verbose logging if true
@@ -18,105 +16,24 @@ typedef struct {
 } Settings;
 Settings CONFIG = {0, 1, 0, NULL, NULL, 1.0, 1.0};
 
-unsigned long Facecount(const Heightmap *hm) {
-	unsigned long facecount;
-	facecount = 2 * (hm->width - 1) * (hm->height - 1);
-	if (CONFIG.base) {
-		facecount += (4 * hm->width) + (4 * hm->height) - 6;
-	}
-	return facecount;
-}
-
-void StartSTL(FILE *fp, const Heightmap *hm) {
-	if (CONFIG.ascii) {
-		if (fprintf(fp, "solid hmstl\n") < 0) {
-			// write failure
-		}
-	}
-	else {
-		char header[] = BINARY_STL_HEADER;
-		unsigned long facecount;
-		
-		if (fwrite(header, 80, 1, fp) != 1) {
-			// write failure
-		}
-		
-		facecount = Facecount(hm);
-		if (fwrite(&facecount, 4, 1, fp) != 1) {
-			// write failure
-		}
-	}
-}
-
-void EndSTL(FILE *fp) {
-	if (CONFIG.ascii) {
-		if (fprintf(fp, "endsolid hmstl\n") < 0) {
-		}
-	}
-}
-
-void TriangleASCII(FILE *fp,
-		float nx, float ny, float nz,
-		float x1, float y1, float z1,
-		float x2, float y2, float z2,
-		float x3, float y3, float z3) {
-	if (fprintf(fp,
-			"facet normal %f %f %f\n"
-			"outer loop\n"
-			"vertex %f %f %f\n"
-			"vertex %f %f %f\n"
-			"vertex %f %f %f\n"
-			"endloop\n"
-			"endfacet\n",
-			nx, ny, nz,
-			x1, y1, z1,
-			x2, y2, z2,
-			x3, y3, z3) < 0) {
-		// write failure
-	}
-}
-
-void TriangleBinary(FILE *fp,
-		float nx, float ny, float nz,
-		float x1, float y1, float z1,
-		float x2, float y2, float z2,
-		float x3, float y3, float z3) {
-	
-	unsigned short attributes = 0;
-	float coordinates[12] = {nx, ny, nz, x1, y1, z1, x2, y2, z2, x3, y3, z3};
-	
-	if (fwrite(coordinates, 4, 12, fp) != 12) {
-		// write failure
-	}
-	
-	if (fwrite(&attributes, 2, 1, fp) != 1) {
-		// write failure
-	}
-}
-
-void Triangle(FILE *fp, const Heightmap *hm,
+void Triangle(trix_mesh *mesh, const Heightmap *hm,
 		unsigned int x1i, unsigned int y1i, float z1,
 		unsigned int x2i, unsigned int y2i, float z2,
 		unsigned int x3i, unsigned int y3i, float z3) {
 	
-	float x1, y1, x2, y2, x3, y3;
-	float nx, ny, nz;
+	trix_triangle t;
 	
-	x1 = (float)x1i; y1 = (float)(hm->height - y1i);
-	x2 = (float)x2i; y2 = (float)(hm->height - y2i);
-	x3 = (float)x3i; y3 = (float)(hm->height - y3i);
+	t.a.x = (float)x1i; t.a.y = (float)(hm->height - y1i); t.a.z = z1;
+	t.b.x = (float)x2i; t.b.y = (float)(hm->height - y2i); t.b.z = z2;
+	t.c.x = (float)x3i; t.c.y = (float)(hm->height - y3i); t.c.z = z3;
 	
 	// imply normals from face winding
-	nx = 0; ny = 0; nz = 0;
+	t.n.x = 0; t.n.y = 0; t.n.z = 0;
 	
-	if (CONFIG.ascii) {
-		TriangleASCII(fp, nx, ny, nz, x1, y1, z1, x2, y2, z2, x3, y3, z3);
-	} else {
-		TriangleBinary(fp, nx, ny, nz, x1, y1, z1, x2, y2, z2, x3, y3, z3);
-	}
+	(void)trixAddTriangle(mesh, &t);
 }
 
-void Mesh(const Heightmap *hm, FILE *fp) {
+void Mesh(const Heightmap *hm, trix_mesh *mesh) {
 
 	unsigned int row, col;
 	unsigned int Ax, Ay, Bx, By, Cx, Cy, Dx, Dy;
@@ -153,13 +70,13 @@ void Mesh(const Heightmap *hm, FILE *fp) {
 			// We should scale to 1.0 accordingly, then apply any extra factor.
 			
 			// ABD
-			Triangle(fp, hm,
+			Triangle(mesh, hm,
 					Ax, Ay, CONFIG.baseheight + CONFIG.zscale * hm->data[A],
 					Bx, By, CONFIG.baseheight + CONFIG.zscale * hm->data[B],
 					Dx, Dy, CONFIG.baseheight + CONFIG.zscale * hm->data[D]);
 			
 			// BCD
-			Triangle(fp, hm,
+			Triangle(mesh, hm,
 					Bx, By, CONFIG.baseheight + CONFIG.zscale * hm->data[B],
 					Cx, Cy, CONFIG.baseheight + CONFIG.zscale * hm->data[C],
 					Dx, Dy, CONFIG.baseheight + CONFIG.zscale * hm->data[D]);
@@ -167,7 +84,7 @@ void Mesh(const Heightmap *hm, FILE *fp) {
 	}
 }
 
-void Walls(const Heightmap *hm, FILE *fp) {
+void Walls(const Heightmap *hm, trix_mesh *mesh) {
 	unsigned int row, col;
 	unsigned long a, b;
 	unsigned int bottom = hm->height -1;
@@ -180,11 +97,11 @@ void Walls(const Heightmap *hm, FILE *fp) {
 		a = col;
 		b = col + 1;
 		// we're using a and b as xy coordinates only in this case, so cast to col/row type
-		Triangle(fp, hm,
+		Triangle(mesh, hm,
 				(unsigned int)a, 0, CONFIG.baseheight + CONFIG.zscale * hm->data[a],
 				(unsigned int)b, 0, CONFIG.baseheight + CONFIG.zscale * hm->data[b],
 				(unsigned int)a, 0, 0);
-		Triangle(fp, hm,
+		Triangle(mesh, hm,
 				(unsigned int)b, 0, CONFIG.baseheight + CONFIG.zscale * hm->data[b],
 				(unsigned int)b, 0, 0,
 				(unsigned int)a, 0, 0);
@@ -192,11 +109,11 @@ void Walls(const Heightmap *hm, FILE *fp) {
 		// south wall
 		a += bottom * hm->width;
 		b += bottom * hm->width;
-		Triangle(fp, hm,
+		Triangle(mesh, hm,
 				col, bottom, CONFIG.baseheight + CONFIG.zscale * hm->data[a],
 				col, bottom, 0,
 				col + 1, bottom, CONFIG.baseheight + CONFIG.zscale * hm->data[b]);
-		Triangle(fp, hm,
+		Triangle(mesh, hm,
 				col, bottom, 0,
 				col + 1, bottom, 0,
 				col + 1, bottom, CONFIG.baseheight + CONFIG.zscale * hm->data[b]);
@@ -208,11 +125,11 @@ void Walls(const Heightmap *hm, FILE *fp) {
 		// west wall
 		a = row * hm->width;
 		b = (row + 1) * hm->width;
-		Triangle(fp, hm,
+		Triangle(mesh, hm,
 				0, row, CONFIG.baseheight + CONFIG.zscale * hm->data[a],
 				0, row, 0,
 				0, row + 1, CONFIG.baseheight + CONFIG.zscale * hm->data[b]);
-		Triangle(fp, hm,
+		Triangle(mesh, hm,
 				0, row, 0,
 				0, row + 1, 0,
 				0, row + 1, CONFIG.baseheight + CONFIG.zscale * hm->data[b]);
@@ -220,11 +137,11 @@ void Walls(const Heightmap *hm, FILE *fp) {
 		// east wall
 		a += right;
 		b += right;
-		Triangle(fp, hm,
+		Triangle(mesh, hm,
 				right, row, CONFIG.baseheight + CONFIG.zscale * hm->data[a],
 				right, row + 1, 0,
 				right, row, 0);
-		Triangle(fp, hm,
+		Triangle(mesh, hm,
 				right, row, CONFIG.baseheight + CONFIG.zscale * hm->data[a],
 				right, row + 1, CONFIG.baseheight + CONFIG.zscale * hm->data[b],
 				right, row + 1, 0);
@@ -232,15 +149,15 @@ void Walls(const Heightmap *hm, FILE *fp) {
 	
 }
 
-void Bottom(const Heightmap *hm, FILE *fp) {
+void Bottom(const Heightmap *hm, trix_mesh *mesh) {
 	// Technically this may yield an invalid STL, since border
 	// triangles will meet the edges of these bottom cap faces
 	// in a series of T-junctions.
-	Triangle(fp, hm,
+	Triangle(mesh, hm,
 			0, 0, 0,
 			hm->width - 1, 0, 0,
 			0, hm->height - 1, 0);
-	Triangle(fp, hm,
+	Triangle(mesh, hm,
 			hm->width - 1, 0, 0,
 			hm->width - 1, hm->height - 1, 0,
 			0, hm->height - 1, 0);
@@ -248,31 +165,26 @@ void Bottom(const Heightmap *hm, FILE *fp) {
 
 // returns 0 on success, nonzero otherwise
 int HeightmapToSTL(Heightmap *hm) {
+	trix_result r;
+	trix_mesh *mesh;
 	
-	FILE *fp;
-	
-	if (CONFIG.output == NULL) {
-		fp = stdout;
+	if ((r = trixCreate("hmstl", &mesh)) != TRIX_OK) {
+		return (int)r;
 	}
-	else if ((fp = fopen(CONFIG.output, "w")) == NULL) {
-		fprintf(stderr, "Cannot open output file %s\n", CONFIG.output);
-		return 1;
-	}
-		
-	StartSTL(fp, hm);
 	
-	Mesh(hm, fp);
+	Mesh(hm, mesh);
 	
 	if (CONFIG.base) {
-		Walls(hm, fp);
-		Bottom(hm, fp);
+		Walls(hm, mesh);
+		Bottom(hm, mesh);
 	}
 	
-	EndSTL(fp);
-	
-	if (fp != stdout) {
-		fclose(fp);
+	// writes to stdout if CONFIG.output is null, otherwise writes to path it names
+	if ((r = trixWrite(CONFIG.output, mesh, (CONFIG.ascii ? TRIX_STL_ASCII : TRIX_STL_BINARY))) != TRIX_OK) {
+		return (int)r;
 	}
+	
+	(void)trixRelease(mesh);
 	
 	return 0;
 }
