@@ -58,18 +58,24 @@ int Masked(unsigned int row, unsigned int col) {
 // If any argument is negative, it is not included in the average.
 // argument zp will always be nonnegative.
 static float avgnonneg(float zp, float z1, float z2, float z3) {
-	float avg = zp;
+	float avg;
 	
-	if (z1 >= 0) {
-		avg = (avg + z1) / 2.0;
-	}
-	
-	if (z2 >= 0) {
-		avg = (avg + z2) / 2.0;
-	}
-	
-	if (z3 >= 0) {
-		avg = (avg + z3) / 2.0;
+	if (z1 >= 0 && z2 >= 0 && z3 >= 0) {
+		avg = (zp + z1 + z2 + z3) / 4;
+	} else if (z1 >= 0 && z2 >= 0) {
+		avg = (zp + z1 + z2) / 3;
+	} else if (z1 >= 0 && z3 >= 0) {
+		avg = (zp + z1 + z3) / 3;
+	} else if (z2 >= 0 && z3 >= 0) {
+		avg = (zp + z2 + z3) / 3;
+	} else if (z1 >= 0) {
+		avg = (zp + z1) / 2;
+	} else if (z2 >= 0) {
+		avg = (zp + z2) / 2;
+	} else if (z3 >= 0) {
+		avg = (zp + z3) / 2;
+	} else {
+		avg = zp;
 	}
 	
 	return avg;
