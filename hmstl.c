@@ -17,6 +17,8 @@ typedef struct {
 } Settings;
 Settings CONFIG = {0, 1, 0, NULL, NULL, NULL, 1.0, 1.0};
 
+Heightmap *mask = NULL;
+
 void Triangle(trix_mesh *mesh, const Heightmap *hm,
 		unsigned int x1i, unsigned int y1i, float z1,
 		unsigned int x2i, unsigned int y2i, float z2,
@@ -34,134 +36,210 @@ void Triangle(trix_mesh *mesh, const Heightmap *hm,
 	(void)trixAddTriangle(mesh, &t);
 }
 
-void Mesh(const Heightmap *hm, trix_mesh *mesh) {
-
-	unsigned int row, col;
-	unsigned int Ax, Ay, Bx, By, Cx, Cy, Dx, Dy;
-	unsigned long A, B, C, D;
+// return true if the pixel at row/col is masked (not visible)
+int Masked(unsigned int row, unsigned int col) {
+	unsigned long index;
 	
-	for (row = 0; row < hm->height - 1; row++) {
-		for (col = 0; col < hm->width - 1; col++) {
+	// just bake check for CONFIG.mask in here and return unmasked
+	// if masking is not enabled.
+	
+	index = (row * mask->width) + col;
+	if (mask->data[index] > 128) {
+		return 1;
+	}
+	return 0;
+}
+
+// returns average of all non-negative arguments.
+// If any argument is negative, it is not included in the average.
+// argument zp will always be nonnegative.
+static float avgnonneg(float zp, float z1, float z2, float z3) {
+	float avg = zp;
+	
+	if (z1 >= 0) {
+		avg = (avg + z1) / 2.0;
+	}
+	
+	if (z2 >= 0) {
+		avg = (avg + z2) / 2.0;
+	}
+	
+	if (z3 >= 0) {
+		avg = (avg + z3) / 2.0;
+	}
+	
+	return avg;
+}
+
+static unsigned char hmat(const Heightmap *hm, unsigned int x, unsigned int y) {
+	return hm->data[(hm->width * y) + x];
+}
+
+static float hmz(unsigned char v) {
+	return CONFIG.baseheight + (CONFIG.zscale * v);
+}
+
+void Mesh(const Heightmap *hm, trix_mesh *surface) {
+	unsigned int x, y;
+	float az, bz, cz, dz, ez, fz, gz, hz;
+	trix_triangle ti = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+	trix_triangle tj = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+	trix_triangle tk = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+	trix_triangle tl = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+	trix_vertex vp, v1, v2, v3, v4;		
+	unsigned long index;
+	
+	for (y = 0; y < hm->height; y++) {
+		for (x = 0; x < hm->width; x++) {
+			
+			if (Masked(x, y)) {
+				continue;
+			}
 			
 			/*
-			 * Point a is at coordinates row, col.
-			 * We output the quad between point A and C as two
-			 * triangles, ABD and BCD.
-			 * 
-			 * A-D
-			 * |/|
-			 * B-C
-			 * 
-			 */
+				+---+---+---+
+				|   |   |   |
+				| A | B | C |
+				|   |   |   |
+				+---1---2---+
+				|   |\I/|   |
+				| H |LPJ| D |
+				|   |/K\|   |
+				+---4---3---+
+				|   |   |   |
+				| G | F | E |
+				|   |   |   |
+				+---+---+---+
 			
-			// Vertex coordinates in terms of row and col.
-			Ax = col;     Ay = row;
-			Bx = col;     By = row + 1;
-			Cx = col + 1; Cy = row + 1;
-			Dx = col + 1; Dy = row;
+			Current pixel position is marked by center, P.
+			This pixel is output as four triangles, I, J, K,
+			and L. Vertex P is shared among them.
+			The remaining four vertices are 1, 2, 3, and 4.
+			Neighbring pixels are A, B, C, D, E, F, G, and H.
 			
-			// Bitmap indices of vertex coordinates.
-			A = (Ay * hm->width) + Ax;
-			B = (By * hm->width) + Bx;
-			C = (Cy * hm->width) + Cx;
-			D = (Dy * hm->width) + Dx;
+			Vertex 1 z is average of ABPH z
+			Vertex 2 z is average of BCDP z
+			Vertex 3 z is average of PDEF z
+			Vertex 4 z is average of HPFG z
 			
-			// hm->data[N] is the raw Z value of vertex N.
-			// Z values are not necessarily expressed in same units as XY.
-			// We should scale to 1.0 accordingly, then apply any extra factor.
+			Any neighbor pixel that is masked or out of bounds
+			(as with map edges) is omitted from the average.
+						
+			*/
 			
-			// ABD
-			Triangle(mesh, hm,
-					Ax, Ay, CONFIG.baseheight + CONFIG.zscale * hm->data[A],
-					Bx, By, CONFIG.baseheight + CONFIG.zscale * hm->data[B],
-					Dx, Dy, CONFIG.baseheight + CONFIG.zscale * hm->data[D]);
+			if (x == 0 || y == 0 || Masked(x-1, y-1)) {
+				az = -1;
+			} else {
+				az = hmz(hmat(hm, x - 1, y - 1));
+			}
 			
-			// BCD
-			Triangle(mesh, hm,
-					Bx, By, CONFIG.baseheight + CONFIG.zscale * hm->data[B],
-					Cx, Cy, CONFIG.baseheight + CONFIG.zscale * hm->data[C],
-					Dx, Dy, CONFIG.baseheight + CONFIG.zscale * hm->data[D]);
+			if (y == 0 || Masked(x, y - 1)) {
+				bz = -1;
+			} else {
+				bz = hmz(hmat(hm, x, y - 1));
+			}
+			
+			if (y == 0 || x + 1 == hm->width || Masked(x + 1, y - 1)) {
+				cz = -1;
+			} else {
+				cz = hmz(hmat(hm, x + 1, y - 1));
+			}
+			
+			if (x + 1 == hm->width || Masked(x + 1, y)) {
+				dz = -1;
+			} else {
+				dz = hmz(hmat(hm, x + 1, y));
+			}
+			
+			if (x + 1 == hm->width || y + 1 == hm->height || Masked(x + 1, y + 1)) {
+				ez = -1;
+			} else {
+				ez = hmz(hmat(hm, x + 1, y + 1));
+			}
+			
+			if (y + 1 == hm->height || Masked(x, y + 1)) {
+				fz = -1;
+			} else {
+				fz = hmz(hmat(hm, x, y + 1));
+			}
+			
+			if (y + 1 == hm->height || x == 0 || Masked(x - 1, y + 1)) {
+				gz = -1;
+			} else {
+				gz = hmz(hmat(hm, x - 1, y + 1));
+			}
+			
+			if (x == 0 || Masked(x - 1, y)) {
+				hz = -1;
+			} else {
+				hz = hmz(hmat(hm, x - 1, y));
+			}			
+			
+			// common pixel vertex p
+			vp.x = (float)x;
+			vp.y = (float)(hm->height - y);
+			index = (y * hm->width) + x;
+			vp.z = hmz(hm->data[index]);
+			
+			// Vertex 1
+			v1.x = (float)x - 0.5;
+			v1.y = (float)(hm->height - (y - 0.5));
+			v1.z = avgnonneg(vp.z, az, bz, hz);
+			
+			// Vertex 2
+			v2.x = (float)x + 0.5;
+			v2.y = v1.y;
+			v2.z = avgnonneg(vp.z, bz, cz, dz);
+			
+			// Vertex 3
+			v3.x = v2.x;
+			v3.y = (float)(hm->height - (y + 0.5));
+			v3.z = avgnonneg(vp.z, dz, ez, fz);
+			
+			// Vertex 4
+			v4.x = v1.x;
+			v4.y = v3.y;
+			v4.z = avgnonneg(vp.z, hz, fz, gz);
+			
+			// this can be done by assigning triangle vertices directly
+			// (doing everything seperately just helps keep it clear)
+			
+			// Triangle I
+			// Vertices 2, 1, and P
+			ti.a = v2;
+			ti.b = v1;
+			ti.c = vp;
+			
+			// Triangle J
+			// Vertices 3, 2, and P
+			tj.a = v3;
+			tj.b = v2;
+			tj.c = vp;
+			
+			// Triangle K
+			// Vertices 4, 3, and P
+			tk.a = v4;
+			tk.b = v3;
+			tk.c = vp;
+			
+			// Triangle L
+			// Vertices 1, 4, and P
+			tl.a = v1;
+			tl.b = v4;
+			tl.c = vp;
+			
+			// ought to attend to result, so we can stop
+			// if there is a problem with the mesh.
+			
+			(void)trixAddTriangle(surface, &ti);
+			(void)trixAddTriangle(surface, &tj);
+			(void)trixAddTriangle(surface, &tk);
+			(void)trixAddTriangle(surface, &tl);
+			
+			// generate walls for b, d, f, or h if -1
 		}
 	}
-}
-
-void Walls(const Heightmap *hm, trix_mesh *mesh) {
-	unsigned int row, col;
-	unsigned long a, b;
-	unsigned int bottom = hm->height -1;
-	unsigned int right = hm->width - 1;
 	
-	// north and south walls
-	for (col = 0; col < hm->width - 1; col++) {
-		
-		// north wall
-		a = col;
-		b = col + 1;
-		// we're using a and b as xy coordinates only in this case, so cast to col/row type
-		Triangle(mesh, hm,
-				(unsigned int)a, 0, CONFIG.baseheight + CONFIG.zscale * hm->data[a],
-				(unsigned int)b, 0, CONFIG.baseheight + CONFIG.zscale * hm->data[b],
-				(unsigned int)a, 0, 0);
-		Triangle(mesh, hm,
-				(unsigned int)b, 0, CONFIG.baseheight + CONFIG.zscale * hm->data[b],
-				(unsigned int)b, 0, 0,
-				(unsigned int)a, 0, 0);
-		
-		// south wall
-		a += bottom * hm->width;
-		b += bottom * hm->width;
-		Triangle(mesh, hm,
-				col, bottom, CONFIG.baseheight + CONFIG.zscale * hm->data[a],
-				col, bottom, 0,
-				col + 1, bottom, CONFIG.baseheight + CONFIG.zscale * hm->data[b]);
-		Triangle(mesh, hm,
-				col, bottom, 0,
-				col + 1, bottom, 0,
-				col + 1, bottom, CONFIG.baseheight + CONFIG.zscale * hm->data[b]);
-	}
-	
-	// west and east walls
-	for (row = 0; row < hm->height - 1; row++) {
-		
-		// west wall
-		a = row * hm->width;
-		b = (row + 1) * hm->width;
-		Triangle(mesh, hm,
-				0, row, CONFIG.baseheight + CONFIG.zscale * hm->data[a],
-				0, row, 0,
-				0, row + 1, CONFIG.baseheight + CONFIG.zscale * hm->data[b]);
-		Triangle(mesh, hm,
-				0, row, 0,
-				0, row + 1, 0,
-				0, row + 1, CONFIG.baseheight + CONFIG.zscale * hm->data[b]);
-		
-		// east wall
-		a += right;
-		b += right;
-		Triangle(mesh, hm,
-				right, row, CONFIG.baseheight + CONFIG.zscale * hm->data[a],
-				right, row + 1, 0,
-				right, row, 0);
-		Triangle(mesh, hm,
-				right, row, CONFIG.baseheight + CONFIG.zscale * hm->data[a],
-				right, row + 1, CONFIG.baseheight + CONFIG.zscale * hm->data[b],
-				right, row + 1, 0);
-	}
-	
-}
-
-void Bottom(const Heightmap *hm, trix_mesh *mesh) {
-	// Technically this may yield an invalid STL, since border
-	// triangles will meet the edges of these bottom cap faces
-	// in a series of T-junctions.
-	Triangle(mesh, hm,
-			0, 0, 0,
-			hm->width - 1, 0, 0,
-			0, hm->height - 1, 0);
-	Triangle(mesh, hm,
-			hm->width - 1, 0, 0,
-			hm->width - 1, hm->height - 1, 0,
-			0, hm->height - 1, 0);
 }
 
 // returns 0 on success, nonzero otherwise
@@ -174,12 +252,7 @@ int HeightmapToSTL(Heightmap *hm) {
 	}
 	
 	Mesh(hm, mesh);
-	
-	if (CONFIG.base) {
-		Walls(hm, mesh);
-		Bottom(hm, mesh);
-	}
-	
+
 	// writes to stdout if CONFIG.output is null, otherwise writes to path it names
 	if ((r = trixWrite(mesh, CONFIG.output, (CONFIG.ascii ? TRIX_STL_ASCII : TRIX_STL_BINARY))) != TRIX_OK) {
 		return (int)r;
@@ -285,6 +358,12 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 	
+	if (CONFIG.mask != NULL) {
+		if ((mask = ReadHeightmap(CONFIG.mask)) == NULL) {
+			return 1;
+		}
+	}
+	
 	if ((hm = ReadHeightmap(CONFIG.input)) == NULL) {
 		return 1;
 	}
@@ -296,6 +375,10 @@ int main(int argc, char **argv) {
 	HeightmapToSTL(hm);
 	
 	FreeHeightmap(hm);
+	
+	if (CONFIG.mask != NULL) {
+		FreeHeightmap(mask);
+	}
 	
 	return 0;
 }
