@@ -54,6 +54,24 @@ int Masked(unsigned int x, unsigned int y) {
 	return 0;
 }
 
+static void Wall(trix_mesh *mesh, const trix_vertex *a, const trix_vertex *b) {
+	trix_vertex a0 = *a;
+	trix_vertex b0 = *b;
+	trix_triangle t1 = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+	trix_triangle t2 = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+	a0.z = 0;
+	b0.z = 0;
+	t1.a = *a;
+	t1.b = *b;
+	t1.c = b0;
+	t2.a = b0;
+	t2.b = a0;
+	t2.c = *a;
+	(void)trixAddTriangle(mesh, &t1);
+	(void)trixAddTriangle(mesh, &t2);
+}
+
+
 // returns average of all non-negative arguments.
 // If any argument is negative, it is not included in the average.
 // argument zp will always be nonnegative.
@@ -246,10 +264,48 @@ void Mesh(const Heightmap *hm, trix_mesh *surface) {
 			(void)trixAddTriangle(surface, &tk);
 			(void)trixAddTriangle(surface, &tl);
 			
-			// generate walls for b, d, f, or h if -1
+			// nothing left to do for this pixel unless we need to make walls
+			if (CONFIG.base == 0) {
+				continue;
+			}
+		
+			// bottom quad
+			ti.a = v1; ti.b = v2; ti.c = v4;
+			ti.a.z = 0; ti.b.z = 0; ti.c.z = 0;
+			tj.a = v2; tj.b = v3; tj.c = v4;
+			tj.a.z = 0; tj.b.z = 0; tj.c.z = 0;
+			(void)trixAddTriangle(surface, &ti);
+			(void)trixAddTriangle(surface, &tj);
+			
+			// north face
+			if (bz < 0) {
+				// top: vertex 1 and 2
+				// bot: vertex 1 and 2 with z 0
+				Wall(surface, &v1, &v2);
+			}
+			
+			// east face
+			if (dz < 0) {
+				// top: vertex 2 and 3
+				// bot: vertex 2 and 3 with z 0
+				Wall(surface, &v2, &v3);
+			}
+			
+			// south face
+			if (fz < 0) {
+				// top: vertex 3 and 4
+				// bot: vertex 3 and 4 with z 0
+				Wall(surface, &v3, &v4);
+			}
+			
+			// west face
+			if (hz < 0) {
+				// top: vertex 4 and 1
+				// bot: vertex 4 and 1 with z 0
+				Wall(surface, &v4, &v1);
+			}
 		}
 	}
-	
 }
 
 // returns 0 on success, nonzero otherwise
@@ -313,6 +369,7 @@ int parseopts(int argc, char **argv) {
 			case 'm':
 				// Mask file (default none)
 				CONFIG.mask = optarg;
+				break;
 			case 's':
 				// surface only mode - omit base (walls and bottom)
 				CONFIG.base = 0;
