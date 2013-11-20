@@ -43,6 +43,10 @@ int Masked(unsigned int row, unsigned int col) {
 	// just bake check for CONFIG.mask in here and return unmasked
 	// if masking is not enabled.
 	
+	if (CONFIG.mask == NULL) {
+		return 0;
+	}
+	
 	index = (row * mask->width) + col;
 	if (mask->data[index] > 128) {
 		return 1;
@@ -183,7 +187,7 @@ void Mesh(const Heightmap *hm, trix_mesh *surface) {
 			
 			// Vertex 1
 			v1.x = (float)x - 0.5;
-			v1.y = (float)(hm->height - (y - 0.5));
+			v1.y = ((float)hm->height - ((float)y - 0.5));
 			v1.z = avgnonneg(vp.z, az, bz, hz);
 			
 			// Vertex 2
@@ -193,7 +197,7 @@ void Mesh(const Heightmap *hm, trix_mesh *surface) {
 			
 			// Vertex 3
 			v3.x = v2.x;
-			v3.y = (float)(hm->height - (y + 0.5));
+			v3.y = ((float)hm->height - ((float)y + 0.5));
 			v3.z = avgnonneg(vp.z, dz, ez, fz);
 			
 			// Vertex 4
