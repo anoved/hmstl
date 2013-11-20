@@ -16,7 +16,7 @@ By default, `hmstl` expects to read a heightmap image from standard input and wi
 - `-o OUTPUT` write STL output to the specified `OUTPUT` file
 - `-z SCALE` multiple heightmap values by `SCALE`. Default: `1`
 - `-b HEIGHT` set base thickness to `HEIGHT`. Default and minimum: `1`
-- `-m` surface mesh only; omits base walls and bottom
+- `-s` surface mesh only; omits base walls and bottom
 - `-a` output ASCII STL instead of default binary STL
 - `-v` verbose mode (logs some info to standard error)
 
