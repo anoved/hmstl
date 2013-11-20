@@ -37,7 +37,7 @@ void Triangle(trix_mesh *mesh, const Heightmap *hm,
 }
 
 // return true if the pixel at row/col is masked (not visible)
-int Masked(unsigned int row, unsigned int col) {
+int Masked(unsigned int x, unsigned int y) {
 	unsigned long index;
 	
 	// just bake check for CONFIG.mask in here and return unmasked
@@ -47,7 +47,7 @@ int Masked(unsigned int row, unsigned int col) {
 		return 0;
 	}
 	
-	index = (row * mask->width) + col;
+	index = (y * mask->width) + x;
 	if (mask->data[index] > 128) {
 		return 1;
 	}
