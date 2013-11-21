@@ -109,7 +109,7 @@ static float hmz(unsigned char v) {
 	return CONFIG.baseheight + (CONFIG.zscale * v);
 }
 
-void Mesh(const Heightmap *hm, trix_mesh *surface) {
+void Mesh(const Heightmap *hm, trix_mesh *mesh) {
 	unsigned int x, y;
 	float az, bz, cz, dz, ez, fz, gz, hz;
 	trix_triangle ti = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
@@ -261,10 +261,10 @@ void Mesh(const Heightmap *hm, trix_mesh *surface) {
 			// ought to attend to result, so we can stop
 			// if there is a problem with the mesh.
 			
-			(void)trixAddTriangle(surface, &ti);
-			(void)trixAddTriangle(surface, &tj);
-			(void)trixAddTriangle(surface, &tk);
-			(void)trixAddTriangle(surface, &tl);
+			(void)trixAddTriangle(mesh, &ti);
+			(void)trixAddTriangle(mesh, &tj);
+			(void)trixAddTriangle(mesh, &tk);
+			(void)trixAddTriangle(mesh, &tl);
 			
 			// nothing left to do for this pixel unless we need to make walls
 			if (CONFIG.base == 0) {
@@ -276,27 +276,27 @@ void Mesh(const Heightmap *hm, trix_mesh *surface) {
 			ti.a.z = 0; ti.b.z = 0; ti.c.z = 0;
 			tj.a = v2; tj.b = v3; tj.c = v4;
 			tj.a.z = 0; tj.b.z = 0; tj.c.z = 0;
-			(void)trixAddTriangle(surface, &ti);
-			(void)trixAddTriangle(surface, &tj);
+			(void)trixAddTriangle(mesh, &ti);
+			(void)trixAddTriangle(mesh, &tj);
 			
 			// north wall (vertex 1 to 2)
 			if (y == 0 || Masked(x, y - 1)) {
-				Wall(surface, &v1, &v2);
+				Wall(mesh, &v1, &v2);
 			}
 			
 			// east wall (vertex 2 to 3)
 			if (x + 1 == hm->width || Masked(x + 1, y)) {
-				Wall(surface, &v2, &v3);
+				Wall(mesh, &v2, &v3);
 			}
 			
 			// south wall (vertex 3 to 4)
 			if (y + 1 == hm->height || Masked(x, y + 1)) {
-				Wall(surface, &v3, &v4);
+				Wall(mesh, &v3, &v4);
 			}
 			
 			// west wall (vertex 4 to 1)
 			if (x == 0 || Masked(x - 1, y)) {
-				Wall(surface, &v4, &v1);
+				Wall(mesh, &v4, &v1);
 			}
 		}
 	}
