@@ -157,54 +157,49 @@ void Mesh(const Heightmap *hm, trix_mesh *surface) {
 						
 			*/
 			
-			// bug: we should still read non-edge neighbor pixel z values
-			// even if those neighbors are masked, so that masked and
-			// reverse masked outputs match up evenly. ie, currently
-			// we are misgenerating triangles along mask edges.
-			
-			if (x == 0 || y == 0 || Masked(x-1, y-1)) {
+			if (x == 0 || y == 0) {
 				az = -1;
 			} else {
 				az = hmz(hmat(hm, x - 1, y - 1));
 			}
 			
-			if (y == 0 || Masked(x, y - 1)) {
+			if (y == 0) {
 				bz = -1;
 			} else {
 				bz = hmz(hmat(hm, x, y - 1));
 			}
 			
-			if (y == 0 || x + 1 == hm->width || Masked(x + 1, y - 1)) {
+			if (y == 0 || x + 1 == hm->width) {
 				cz = -1;
 			} else {
 				cz = hmz(hmat(hm, x + 1, y - 1));
 			}
 			
-			if (x + 1 == hm->width || Masked(x + 1, y)) {
+			if (x + 1 == hm->width) {
 				dz = -1;
 			} else {
 				dz = hmz(hmat(hm, x + 1, y));
 			}
 			
-			if (x + 1 == hm->width || y + 1 == hm->height || Masked(x + 1, y + 1)) {
+			if (x + 1 == hm->width || y + 1 == hm->height) {
 				ez = -1;
 			} else {
 				ez = hmz(hmat(hm, x + 1, y + 1));
 			}
 			
-			if (y + 1 == hm->height || Masked(x, y + 1)) {
+			if (y + 1 == hm->height) {
 				fz = -1;
 			} else {
 				fz = hmz(hmat(hm, x, y + 1));
 			}
 			
-			if (y + 1 == hm->height || x == 0 || Masked(x - 1, y + 1)) {
+			if (y + 1 == hm->height || x == 0) {
 				gz = -1;
 			} else {
 				gz = hmz(hmat(hm, x - 1, y + 1));
 			}
 			
-			if (x == 0 || Masked(x - 1, y)) {
+			if (x == 0) {
 				hz = -1;
 			} else {
 				hz = hmz(hmat(hm, x - 1, y));
@@ -284,31 +279,23 @@ void Mesh(const Heightmap *hm, trix_mesh *surface) {
 			(void)trixAddTriangle(surface, &ti);
 			(void)trixAddTriangle(surface, &tj);
 			
-			// north face
-			if (bz < 0) {
-				// top: vertex 1 and 2
-				// bot: vertex 1 and 2 with z 0
+			// north wall (vertex 1 to 2)
+			if (y == 0 || Masked(x, y - 1)) {
 				Wall(surface, &v1, &v2);
 			}
 			
-			// east face
-			if (dz < 0) {
-				// top: vertex 2 and 3
-				// bot: vertex 2 and 3 with z 0
+			// east wall (vertex 2 to 3)
+			if (x + 1 == hm->width || Masked(x + 1, y)) {
 				Wall(surface, &v2, &v3);
 			}
 			
-			// south face
-			if (fz < 0) {
-				// top: vertex 3 and 4
-				// bot: vertex 3 and 4 with z 0
+			// south wall (vertex 3 to 4)
+			if (y + 1 == hm->height || Masked(x, y + 1)) {
 				Wall(surface, &v3, &v4);
 			}
 			
-			// west face
-			if (hz < 0) {
-				// top: vertex 4 and 1
-				// bot: vertex 4 and 1 with z 0
+			// west wall (vertex 4 to 1)
+			if (x == 0 || Masked(x - 1, y)) {
 				Wall(surface, &v4, &v1);
 			}
 		}
