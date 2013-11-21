@@ -127,34 +127,35 @@ void Mesh(const Heightmap *hm, trix_mesh *mesh) {
 			}
 			
 			/*
-				+---+---+---+
-				|   |   |   |
-				| A | B | C |
-				|   |   |   |
-				+---1---2---+
-				|   |\I/|   |
-				| H |LPJ| D |
-				|   |/K\|   |
-				+---4---3---+
-				|   |   |   |
-				| G | F | E |
-				|   |   |   |
-				+---+---+---+
 			
-			Current pixel position is marked by center, P.
+			+---+---+---+
+			|   |   |   |
+			| A | B | C |
+			|   |   |   |
+			+---1---2---+
+			|   |\I/|   |
+			| H |LPJ| D |
+			|   |/K\|   |
+			+---4---3---+
+			|   |   |   |
+			| G | F | E |
+			|   |   |   |
+			+---+---+---+
+			
+			Current pixel position is marked at center as P.
 			This pixel is output as four triangles, I, J, K,
-			and L. Vertex P is shared among them.
+			and L. Vertex P is common to all four triangles.
 			The remaining four vertices are 1, 2, 3, and 4.
-			Neighbring pixels are A, B, C, D, E, F, G, and H.
+			Neighboring pixels are A, B, C, D, E, F, G, and H.
 			
 			Vertex 1 z is average of ABPH z
 			Vertex 2 z is average of BCDP z
 			Vertex 3 z is average of PDEF z
 			Vertex 4 z is average of HPFG z
 			
-			Any neighbor pixel that is masked or out of bounds
-			(as with map edges) is omitted from the average.
-						
+			Averages do not include neighbors that would lie
+			outside the image, but do included masked values.
+			
 			*/
 			
 			if (x == 0 || y == 0) {
@@ -230,10 +231,7 @@ void Mesh(const Heightmap *hm, trix_mesh *mesh) {
 			v4.x = v1.x;
 			v4.y = v3.y;
 			v4.z = avgnonneg(vp.z, hz, fz, gz);
-			
-			// this can be done by assigning triangle vertices directly
-			// (doing everything seperately just helps keep it clear)
-			
+						
 			// Triangle I
 			// Vertices 2, 1, and P
 			ti.a = v2;
