@@ -99,13 +99,9 @@ static float hmzat(const Heightmap *hm, unsigned int x, unsigned int y) {
 void Mesh(const Heightmap *hm, trix_mesh *mesh) {
 	unsigned int x, y;
 	float az, bz, cz, dz, ez, fz, gz, hz;
-	trix_triangle ti = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
-	trix_triangle tj = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
-	trix_triangle tk = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
-	trix_triangle tl = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
-	trix_vertex vp, v1, v2, v3, v4;		
-	unsigned long index;
-	
+	trix_vertex vp, v1, v2, v3, v4;
+	trix_triangle ti = {}, tj = {}, tk = {}, tl = {};
+
 	for (y = 0; y < hm->height; y++) {
 		for (x = 0; x < hm->width; x++) {
 			
