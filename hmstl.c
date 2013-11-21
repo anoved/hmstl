@@ -19,23 +19,6 @@ Settings CONFIG = {0, 1, 0, NULL, NULL, NULL, 1.0, 1.0};
 
 Heightmap *mask = NULL;
 
-void Triangle(trix_mesh *mesh, const Heightmap *hm,
-		unsigned int x1i, unsigned int y1i, float z1,
-		unsigned int x2i, unsigned int y2i, float z2,
-		unsigned int x3i, unsigned int y3i, float z3) {
-	
-	trix_triangle t;
-	
-	t.a.x = (float)x1i; t.a.y = (float)(hm->height - y1i); t.a.z = z1;
-	t.b.x = (float)x2i; t.b.y = (float)(hm->height - y2i); t.b.z = z2;
-	t.c.x = (float)x3i; t.c.y = (float)(hm->height - y3i); t.c.z = z3;
-	
-	// imply normals from face winding
-	t.n.x = 0; t.n.y = 0; t.n.z = 0;
-	
-	(void)trixAddTriangle(mesh, &t);
-}
-
 // return true if the pixel at row/col is masked (not visible)
 int Masked(unsigned int x, unsigned int y) {
 	unsigned long index;
