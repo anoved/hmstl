@@ -409,7 +409,14 @@ int main(int argc, char **argv) {
 	}
 	
 	if (CONFIG.mask != NULL) {
+		
 		if ((mask = ReadHeightmap(CONFIG.mask)) == NULL) {
+			return 1;
+		}
+		
+		if ((mask->width != hm->width) || (mask->height != hm->height)) {
+			fprintf(stderr, "Mask dimensions do not match heightmap dimensions.\n");
+			fprintf(stderr, "Heightmap width: %u, height: %u\n", hm->width, hm->height);
 			return 1;
 		}
 	}
