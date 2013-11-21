@@ -78,35 +78,22 @@ static void Wall(trix_mesh *mesh, const trix_vertex *a, const trix_vertex *b) {
 // If any argument is negative, it is not included in the average.
 // argument zp will always be nonnegative.
 static float avgnonneg(float zp, float z1, float z2, float z3) {
-	float avg;
+	float sum = zp;
+	float z[3] = {z1, z2, z3};
+	int i, n = 1;
 	
-	if (z1 >= 0 && z2 >= 0 && z3 >= 0) {
-		avg = (zp + z1 + z2 + z3) / 4;
-	} else if (z1 >= 0 && z2 >= 0) {
-		avg = (zp + z1 + z2) / 3;
-	} else if (z1 >= 0 && z3 >= 0) {
-		avg = (zp + z1 + z3) / 3;
-	} else if (z2 >= 0 && z3 >= 0) {
-		avg = (zp + z2 + z3) / 3;
-	} else if (z1 >= 0) {
-		avg = (zp + z1) / 2;
-	} else if (z2 >= 0) {
-		avg = (zp + z2) / 2;
-	} else if (z3 >= 0) {
-		avg = (zp + z3) / 2;
-	} else {
-		avg = zp;
+	for (i = 0; i < 3; i++) {
+		if (z[i] >= 0) {
+			sum += z[i];
+			n++;
+		}
 	}
 	
-	return avg;
+	return sum / (float)n;
 }
 
-static unsigned char hmat(const Heightmap *hm, unsigned int x, unsigned int y) {
-	return hm->data[(hm->width * y) + x];
-}
-
-static float hmz(unsigned char v) {
-	return CONFIG.baseheight + (CONFIG.zscale * v);
+static float hmzat(const Heightmap *hm, unsigned int x, unsigned int y) {
+	return CONFIG.baseheight + (CONFIG.zscale + hm->data[(hm->width * y) + x]);;
 }
 
 void Mesh(const Heightmap *hm, trix_mesh *mesh) {
@@ -161,56 +148,55 @@ void Mesh(const Heightmap *hm, trix_mesh *mesh) {
 			if (x == 0 || y == 0) {
 				az = -1;
 			} else {
-				az = hmz(hmat(hm, x - 1, y - 1));
+				az = hmzat(hm, x - 1, y - 1);
 			}
 			
 			if (y == 0) {
 				bz = -1;
 			} else {
-				bz = hmz(hmat(hm, x, y - 1));
+				bz = hmzat(hm, x, y - 1);
 			}
 			
 			if (y == 0 || x + 1 == hm->width) {
 				cz = -1;
 			} else {
-				cz = hmz(hmat(hm, x + 1, y - 1));
+				cz = hmzat(hm, x + 1, y - 1);
 			}
 			
 			if (x + 1 == hm->width) {
 				dz = -1;
 			} else {
-				dz = hmz(hmat(hm, x + 1, y));
+				dz = hmzat(hm, x + 1, y);
 			}
 			
 			if (x + 1 == hm->width || y + 1 == hm->height) {
 				ez = -1;
 			} else {
-				ez = hmz(hmat(hm, x + 1, y + 1));
+				ez = hmzat(hm, x + 1, y + 1);
 			}
 			
 			if (y + 1 == hm->height) {
 				fz = -1;
 			} else {
-				fz = hmz(hmat(hm, x, y + 1));
+				fz = hmzat(hm, x, y + 1);
 			}
 			
 			if (y + 1 == hm->height || x == 0) {
 				gz = -1;
 			} else {
-				gz = hmz(hmat(hm, x - 1, y + 1));
+				gz = hmzat(hm, x - 1, y + 1);
 			}
 			
 			if (x == 0) {
 				hz = -1;
 			} else {
-				hz = hmz(hmat(hm, x - 1, y));
+				hz = hmzat(hm, x - 1, y);
 			}			
 			
 			// common pixel vertex p
 			vp.x = (float)x;
 			vp.y = (float)(hm->height - y);
-			index = (y * hm->width) + x;
-			vp.z = hmz(hm->data[index]);
+			vp.z = hmzat(hm, x, y);
 			
 			// Vertex 1
 			v1.x = (float)x - 0.5;
