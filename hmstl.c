@@ -8,24 +8,31 @@
 typedef struct {
 	int log; // boolean; verbose logging if true
 	int base; // boolean; output walls and bottom as well as terrain surface if true
-	int ascii; // boolean; output ASCII STL instead of binary STL if true
+	int ascii; // boolean; output ASCII STL instead of binary STL if true	
 	char *input; // path to input file; use stdin if NULL
 	char *output; // path to output file; use stdout if NULL
 	char *mask; // path to mask file; no mask if NULL
 	float zscale; // scaling factor applied to raw Z values; default 1.0
 	float baseheight; // height in STL units of base below lowest terrain (technically, offset added to scaled Z values); default and minimum 1.0
 } Settings;
-Settings CONFIG = {0, 1, 0, NULL, NULL, NULL, 1.0, 1.0};
+
+Settings CONFIG = {
+	0,    // quiet
+	1,    // generate base (walls and bottom)
+	0,    // binary output
+	NULL, // read from stdin
+	NULL, // write to stdout
+	NULL, // no mask
+	1.0,  // no z scaling (use raw heightmap values)
+	1.0   // minimum base thickness of one unit
+};
 
 Heightmap *mask = NULL;
 
 // return true if the pixel at row/col is masked (not visible)
 int Masked(unsigned int x, unsigned int y) {
 	unsigned long index;
-	
-	// just bake check for CONFIG.mask in here and return unmasked
-	// if masking is not enabled.
-	
+
 	if (CONFIG.mask == NULL) {
 		return 0;
 	}
