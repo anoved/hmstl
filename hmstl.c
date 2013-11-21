@@ -408,6 +408,10 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 	
+	if ((hm = ReadHeightmap(CONFIG.input)) == NULL) {
+		return 1;
+	}
+	
 	if (CONFIG.mask != NULL) {
 		
 		if ((mask = ReadHeightmap(CONFIG.mask)) == NULL) {
@@ -419,10 +423,6 @@ int main(int argc, char **argv) {
 			fprintf(stderr, "Heightmap width: %u, height: %u\n", hm->width, hm->height);
 			return 1;
 		}
-	}
-	
-	if ((hm = ReadHeightmap(CONFIG.input)) == NULL) {
-		return 1;
 	}
 	
 	if (CONFIG.log) {
