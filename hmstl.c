@@ -439,11 +439,11 @@ int main(int argc, char **argv) {
 	
 	HeightmapToSTL(hm);
 	
-	FreeHeightmap(hm);
+	FreeHeightmap(&hm);
 	
 	// free mask iff it is its own image
 	if (mask != NULL && !CONFIG.heightmask) {
-		FreeHeightmap(mask);
+		FreeHeightmap(&mask);
 	}
 	
 	return 0;

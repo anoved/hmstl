@@ -16,7 +16,7 @@ typedef struct {
 } Heightmap;
 
 Heightmap *ReadHeightmap(const char *path);
-void FreeHeightmap(Heightmap *hm);
+void FreeHeightmap(Heightmap **hm);
 void DumpHeightmap(const Heightmap *hm);
 
 #endif

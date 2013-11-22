@@ -218,18 +218,18 @@ Heightmap *ReadHeightmap(const char *path) {
 	return hm;
 }
 
-void FreeHeightmap(Heightmap *hm) {
+void FreeHeightmap(Heightmap **hm) {
 	
-	if (hm == NULL) {
+	if (hm == NULL || *hm == NULL) {
 		return;
 	}
 	
-	if (hm->data != NULL) {
-		free(hm->data);
+	if ((*hm)->data != NULL) {
+		free((*hm)->data);
 	}
 	
-	free(hm);
-	hm = NULL;
+	free(*hm);
+	*hm = NULL;
 }
 
 void DumpHeightmap(const Heightmap *hm) {
