@@ -407,7 +407,7 @@ int main(int argc, char **argv) {
 	Heightmap *hm = NULL;
 	
 	if (parseopts(argc, argv)) {
-		fprintf(stderr, "option parsing failed\n", argv[0]);
+		fprintf(stderr, "option parsing failed\n");
 		return 1;
 	}
 	
