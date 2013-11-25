@@ -25,7 +25,7 @@ test static-splint-1 {
 	has_splint
 } -body {
 	# +quiet suppresses "herald" line and error count (simplifies success case)
-	exec splint -weak +keep +quiet ../hmstl.c -I/usr/local/include
+	exec splint -weak +quiet -unrecog ../hmstl.c -I/usr/local/include
 } -result {}
 
 test static-cppcheck-1 {

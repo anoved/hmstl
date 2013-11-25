@@ -50,7 +50,7 @@ int Masked(unsigned int x, unsigned int y) {
 	}
 	
 	index = (y * mask->width) + x;
-	if (mask->data[index] >= CONFIG.threshold) {
+	if (mask->data[index] >= (unsigned char)CONFIG.threshold) {
 		result = 1;
 	}
 	
@@ -64,8 +64,8 @@ int Masked(unsigned int x, unsigned int y) {
 static void Wall(trix_mesh *mesh, const trix_vertex *a, const trix_vertex *b) {
 	trix_vertex a0 = *a;
 	trix_vertex b0 = *b;
-	trix_triangle t1 = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
-	trix_triangle t2 = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+	trix_triangle t1;
+	trix_triangle t2;
 	a0.z = 0;
 	b0.z = 0;
 	t1.a = *a;
@@ -104,7 +104,7 @@ void Mesh(const Heightmap *hm, trix_mesh *mesh) {
 	unsigned int x, y;
 	float az, bz, cz, dz, ez, fz, gz, hz;
 	trix_vertex vp, v1, v2, v3, v4;
-	trix_triangle ti = {}, tj = {}, tk = {}, tl = {};
+	trix_triangle ti, tj, tk, tl;
 
 	for (y = 0; y < hm->height; y++) {
 		for (x = 0; x < hm->width; x++) {
