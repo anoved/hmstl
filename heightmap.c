@@ -36,7 +36,7 @@ void ScanHeightmap(Heightmap *hm) {
 // Returns NULL on error
 Heightmap *ReadHeightmap(const char *path) {
 	
-	unsigned int width, height, depth;
+	int width, height, depth;
 	unsigned char *data;
 	Heightmap *hm;
 	
@@ -58,9 +58,9 @@ Heightmap *ReadHeightmap(const char *path) {
 		return NULL;
 	}
 	
-	hm->width = width;
-	hm->height = height;
-	hm->size = width * height;
+	hm->width = (unsigned int)width;
+	hm->height = (unsigned int)height;
+	hm->size = (unsigned long)width * (unsigned long)height;
 	hm->data = data;
 	
 	ScanHeightmap(hm);
