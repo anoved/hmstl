@@ -94,7 +94,7 @@ static float avgnonneg(float zp, float z1, float z2, float z3) {
 }
 
 static float hmzat(const Heightmap *hm, unsigned int x, unsigned int y) {
-	return CONFIG.baseheight + (CONFIG.zscale + hm->data[(hm->width * y) + x]);;
+	return CONFIG.baseheight + (CONFIG.zscale * hm->data[(hm->width * y) + x]);;
 }
 
 void Mesh(const Heightmap *hm, trix_mesh *mesh) {
@@ -347,7 +347,7 @@ int parseopts(int argc, char **argv) {
 				break;
 			case 't':
 				// Mask threshold
-				if (sscanf(optarg, "%d", &CONFIG.threshold) != 1 || CONFIG.threshold < 0 || CONFIG.threshold > 255) {
+				if (sscanf(optarg, "%5d", &CONFIG.threshold) != 1 || CONFIG.threshold < 0 || CONFIG.threshold > 255) {
 					fprintf(stderr, "THRESHOLD must be a number between 0 to 255 inclusive\n");
 					return 1;
 				}
