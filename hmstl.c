@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
+
+#ifndef S_SPLINT_S
 #include <unistd.h>
+#endif
 
 #include <libtrix.h>
 #include "heightmap.h"
