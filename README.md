@@ -1,6 +1,10 @@
 # Heightmap to STL
 
-`hmstl` is a simple program to convert a grayscale heightmap image to a 3D model. The supported input heightmap image format is [raw PGM](http://netpbm.sourceforge.net/doc/pgm.html). The output format is [STL](http://www.ennex.com/~fabbers/StL.asp).
+`hmstl` is a simple program to convert heightmap images to 3D models. The supported input heightmap image format is [raw PGM](http://netpbm.sourceforge.net/doc/pgm.html). The output format is [STL](http://www.ennex.com/~fabbers/StL.asp).
+
+## Prerequisites
+
+`hmstl` requires [libtrix](https://github.com/anoved/libtrix/), my rudimentary C library for generating STL files from triangle lists.
 
 ## Build
 
@@ -10,29 +14,41 @@ Compile `hmstl` with:
 
 ## Usage
 
-By default, `hmstl` expects to read a heightmap image from standard input and will print STL to standard output. The following options are also supported:
+By default, `hmstl` can be used as a filter to convert heightmap images on standard input to STL models on standard output. The following options are also supported:
 
-- `-i INPUT` read heightmap image from the specified `INPUT` file
-- `-o OUTPUT` write STL output to the specified `OUTPUT` file
+- `-i INPUT` read heightmap image from the specified `INPUT` file. Otherwise, read heightmap image from standard input.
+- `-o OUTPUT` write STL data to the specified `OUTPUT` file. Otherwise, write STL data to standard output.
 - `-z SCALE` multiple heightmap values by `SCALE`. Default: `1`
 - `-b HEIGHT` set base thickness to `HEIGHT`. Default and minimum: `1`
-- `-s` surface mesh only; omits base walls and bottom
+- `-s` terrain surface only; omits base walls and bottom
 - `-a` output ASCII STL instead of default binary STL
-- `-v` verbose mode (logs some info to standard error)
+
+The following options apply a mask to the heightmap. Only the portion of the heightmap visible through the mask is output. This can be used to generate models of areas with non-rectangular boundaries.
+
+- `-m MASK` load mask image from the specified `MASK` file. Dimensions must match heightmap dimensions.
+- `-t THRESHOLD` consider mask values equal to or less than `THRESHOLD` to be opaque. Default: `127` (in range 0..255)
+- `-h` as an alternative to `-m`, use the heightmap as its own mask; elevations below `THRESHOLD` are considered masked.
+- `-r` reverse mask interpretation (swap transparent and opaque areas)
+
+Supported input image formats include JPG (excluding progressive JPG), PNG, GIF, and BMP. Color images are interpreted as grayscale based on pixel luminance (0.3 R, 0.59 G, 0.11 B).
 
 ## Example
 
-[![Test scene heightmap](tests/scene.png)](tests/scene.pgm)
+[![Test scene heightmap](tests/scene.png)](tests/scene.png)
 
-The file `tests/scene.pgm` is a PGM version of the heightmap image displayed above.
+Create an STL model of `tests/scene.pgm`, the heightmap image above, with the following command. The `-z` option is used to scale height values; an appropriate value depends on dataset resolution and desired exaggeration.
 
-Create an STL model of the heightmap with the following command. The `-z` option is used to scale height values; an appropriate value is dependent on the resolution of your dataset.
-
-	./hmstl -z 0.25 < tests/scene.pgm > tests/scene.stl
+	hmstl -z 0.25 < tests/scene.png > tests/scene.stl
 
 Here is the output displayed in [Meshlab](http://meshlab.sourceforge.net/):
 
 [![Test scene STL file](tests/scene-stl.png)](tests/scene.stl)
+
+Here is a contrived masking example using the same heightmap and a compound oval mask:
+
+	hmstl -z 0.25 -i tests/scene.png -m tests/mask.png -o tests/blob.stl
+
+[![Masked model](tests/blob-stl.png)](tests/blob.stl)
 
 Here is a photo of a Makerbot printing of the [scene-thick](tests/scene-thick.stl) sample model:
 
@@ -40,17 +56,8 @@ Here is a photo of a Makerbot printing of the [scene-thick](tests/scene-thick.st
 
 ## License
 
-Freely distributed under an [MIT License](LICENSE).
+Freely distributed under an [MIT License](LICENSE). See the `LICENSE` files for details.
 
-Portions of the heightmap loading code are derived from [Netpbm](http://netpbm.sourceforge.net) code distributed under the following terms:
+## Acknowledgements
 
-> fileio.c - routines to read elements from Netpbm image files
-> 
-> Copyright (C) 1988 by Jef Poskanzer.
-> 
-> Permission to use, copy, modify, and distribute this software and its
-> documentation for any purpose and without fee is hereby granted, provided
-> that the above copyright notice appear in all copies and that both that
-> copyright notice and this permission notice appear in supporting
-> documentation.  This software is provided "as is" without express or
-> implied warranty.
+Heightmap images are loaded using [Sean Barrett](http://nothings.org/)'s public domain [stb_image.c](http://nothings.org/stb_image.c) library.
