@@ -1,6 +1,6 @@
 # Heightmap to STL
 
-`hmstl` is a simple program to convert heightmap images to 3D models. The supported input heightmap image format is [raw PGM](http://netpbm.sourceforge.net/doc/pgm.html). The output format is [STL](http://www.ennex.com/~fabbers/StL.asp).
+`hmstl` is a simple program to convert heightmap images to 3D models. The output format is [STL](http://www.ennex.com/~fabbers/StL.asp).
 
 ## Prerequisites
 
