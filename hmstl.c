@@ -14,7 +14,7 @@ typedef struct {
 	char *input; // path to input file; use stdin if NULL
 	char *output; // path to output file; use stdout if NULL
 	char *mask; // path to mask file; no mask if NULL
-	int threshold; // 0-255; minimum height value to consider masked
+	int threshold; // 0-255; maximum value considered masked
 	int reversed; // boolean; reverse results of mask tests if true
 	int heightmask; // boolean; use heightmap as it's own mask if true
 	float zscale; // scaling factor applied to raw Z values
@@ -27,7 +27,7 @@ Settings CONFIG = {
 	NULL, // read from stdin
 	NULL, // write to stdout
 	NULL, // no mask
-	128,  // middle of 8 bit range
+	127,  // middle of 8 bit range
 	0,    // normal un-reversed mask
 	0,    // no heightmasking
 	1.0,  // no z scaling (use raw heightmap values)
@@ -36,9 +36,8 @@ Settings CONFIG = {
 
 Heightmap *mask = NULL;
 
-// A masked pixel is a pixel that is not visible.
-// We interpret white areas of mask images to be masked,
-// and black areas to be visible.
+// If a mask is defined, only portions of the heightmap that are visible through the mask are output.
+// Bright areas of the mask image are considered transparent and dark areas are considered opaque.
 int Masked(unsigned int x, unsigned int y) {
 	unsigned long index;
 	int result = 0;
@@ -50,7 +49,7 @@ int Masked(unsigned int x, unsigned int y) {
 	}
 	
 	index = (y * mask->width) + x;
-	if (mask->data[index] >= (unsigned char)CONFIG.threshold) {
+	if (mask->data[index] <= (unsigned char)CONFIG.threshold) {
 		result = 1;
 	}
 	
