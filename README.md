@@ -54,6 +54,12 @@ Here is a photo of a Makerbot printing of the [scene-thick](tests/scene-thick.st
 
 [![Printed model of sample scene](tests/scene-thick-print.jpg)](tests/scene-thick-print.jpg)
 
+## Scale and Orientation
+
+Each pixel in the input heightmap is output as a unit quad (1 unit extent in xy plane) comprised of two triangles. By default, Z values are assumed to use the same units; use the `-z` option to set the correct scale.
+
+The upper left pixel of the input heightmap is output centered at x/y 0/h, where h is the y extent of the heightmap, with the bottom of the model at z 0. Because the output pixel quads are 1 unit square centered over the pixel coordinates, the actual upper left extent of the output model is at -0.5, h + 0.5. 
+
 ## Post-Processing
 
 Meshlab's *Quadric Edge Collapse Decimation* filter is suitable for simplifying `hmstl` output to reduce the number of faces without losing important features. Use various constraints such as *Preserve Boundary* or *Planar Simplification* to ensure original edges are preserved.
