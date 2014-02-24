@@ -150,7 +150,7 @@ trix_result Mesh(const Heightmap *hm, trix_mesh *mesh) {
 			
 			*/
 			
-			// determine elevation of neightboring pixels in order to
+			// determine elevation of neighboring pixels in order to
 			// to interpolate height of corners 1, 2, 3, and 4.
 			// -1 is used to flag edge/masked pixels to disregard.
 			
@@ -226,7 +226,7 @@ trix_result Mesh(const Heightmap *hm, trix_mesh *mesh) {
 			v4.x = v1.x;
 			v4.y = v3.y;
 			v4.z = avgnonneg(vp.z, hz, fz, gz);
-						
+			
 			// Triangle I
 			// vertices 1, 2, 4
 			ti.a = v4;
@@ -339,7 +339,7 @@ int parseopts(int argc, char **argv) {
 			case 'z':
 				// Z scale (heightmap value units relative to XY)
 				if (sscanf(optarg, "%20f", &CONFIG.zscale) != 1 || CONFIG.zscale <= 0) {
-					fprintf(stderr, "CONFIG.zscale must be a number greater than 0.\n");
+					fprintf(stderr, "Z scale must be a number greater than 0.\n");
 					return 1;
 				}
 				break;
