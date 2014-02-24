@@ -105,11 +105,34 @@ static float hmzat(const Heightmap *hm, unsigned int x, unsigned int y) {
 	return CONFIG.baseheight + (CONFIG.zscale * hm->data[(hm->width * y) + x]);;
 }
 
+// given four vertices and a mesh, add two triangles representing the quad with given corners
+trix_result Surface(trix_mesh *mesh, trix_vertex *v1, trix_vertex *v2, trix_vertex *v3, trix_vertex *v4) {
+	trix_triangle i, j;
+	trix_result r;
+	
+	i.a = *v4;
+	i.b = *v2;
+	i.c = *v1;
+	
+	j.a = *v4;
+	j.b = *v3;
+	j.c = *v2;
+	
+	if ((r = trixAddTriangle(mesh, &i)) != TRIX_OK) {
+		return r;
+	}
+	
+	if ((r = trixAddTriangle(mesh, &j)) != TRIX_OK) {
+		return r;
+	}
+	
+	return TRIX_OK;
+}
+
 trix_result Mesh(const Heightmap *hm, trix_mesh *mesh) {
 	unsigned int x, y;
 	float az, bz, cz, dz, ez, fz, gz, hz;
 	trix_vertex vp, v1, v2, v3, v4;
-	trix_triangle ti, tj;
 	trix_result r;
 	
 	for (y = 0; y < hm->height; y++) {
@@ -228,42 +251,14 @@ trix_result Mesh(const Heightmap *hm, trix_mesh *mesh) {
 			v4.y = v3.y;
 			v4.z = avgnonneg(vp.z, hz, fz, gz);
 			
-			// Triangle I
-			// vertices 1, 2, 4
-			ti.a = v4;
-			ti.b = v2;
-			ti.c = v1;
-			
-			// Triangle J
-			// Vertices 2, 3, 4
-			tj.a = v4;
-			tj.b = v3;
-			tj.c = v2;
-			
-			// Add the triangles for this pixel to the surface mesh.
-			// Bail out of mesh generation if we can't add any more.
-			if ((r = trixAddTriangle(mesh, &ti)) != TRIX_OK) {
-				return r;
-			}
-			if ((r = trixAddTriangle(mesh, &tj)) != TRIX_OK) {
+			// Upper surface
+			if ((r = Surface(mesh, &v1, &v2, &v3, &v4)) != TRIX_OK) {
 				return r;
 			}
 			
 			// nothing left to do for this pixel unless we need to make walls
 			if (!CONFIG.base) {
 				continue;
-			}
-			
-			// bottom quad
-			ti.a = v1; ti.b = v2; ti.c = v4;
-			ti.a.z = 0; ti.b.z = 0; ti.c.z = 0;
-			tj.a = v2; tj.b = v3; tj.c = v4;
-			tj.a.z = 0; tj.b.z = 0; tj.c.z = 0;
-			if ((r = trixAddTriangle(mesh, &ti)) != TRIX_OK) {
-				return r;
-			}
-			if ((r = trixAddTriangle(mesh, &tj)) != TRIX_OK) {
-				return r;
 			}
 			
 			// north wall (vertex 1 to 2)
@@ -292,6 +287,12 @@ trix_result Mesh(const Heightmap *hm, trix_mesh *mesh) {
 				if ((r = Wall(mesh, &v4, &v1)) != TRIX_OK) {
 					return r;
 				}
+			}
+			
+			// bottom surface - same as top, except with z = 0 and reverse winding
+			v1.z = 0; v2.z = 0; v3.z = 0; v4.z = 0;
+			if ((r = Surface(mesh, &v4, &v3, &v2, &v1)) != TRIX_OK) {
+				return r;
 			}
 		}
 	}
