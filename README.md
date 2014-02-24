@@ -54,6 +54,10 @@ Here is a photo of a Makerbot printing of the [scene-thick](tests/scene-thick.st
 
 [![Printed model of sample scene](tests/scene-thick-print.jpg)](tests/scene-thick-print.jpg)
 
+## Post-Processing
+
+Meshlab's *Quadric Edge Collapse Decimation* filter is suitable for simplifying `hmstl` output to reduce the number of faces without losing important features. Use various constraints such as *Preserve Boundary* or *Planar Simplification* to ensure original edges are preserved.
+
 ## License
 
 Freely distributed under an [MIT License](LICENSE). See the `LICENSE` files for details.
