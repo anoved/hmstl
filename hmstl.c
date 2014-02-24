@@ -60,11 +60,12 @@ int Masked(unsigned int x, unsigned int y) {
 	return result;
 }
 
-static void Wall(trix_mesh *mesh, const trix_vertex *a, const trix_vertex *b) {
+static trix_result Wall(trix_mesh *mesh, const trix_vertex *a, const trix_vertex *b) {
 	trix_vertex a0 = *a;
 	trix_vertex b0 = *b;
 	trix_triangle t1;
 	trix_triangle t2;
+	trix_result r;
 	a0.z = 0;
 	b0.z = 0;
 	t1.a = *a;
@@ -73,8 +74,13 @@ static void Wall(trix_mesh *mesh, const trix_vertex *a, const trix_vertex *b) {
 	t2.a = b0;
 	t2.b = a0;
 	t2.c = *a;
-	(void)trixAddTriangle(mesh, &t1);
-	(void)trixAddTriangle(mesh, &t2);
+	if ((r = trixAddTriangle(mesh, &t1)) != TRIX_OK) {
+		return r;
+	}
+	if ((r = trixAddTriangle(mesh, &t2)) != TRIX_OK) {
+		return r;
+	}
+	return TRIX_OK;
 }
 
 // returns average of all non-negative arguments.
@@ -99,12 +105,13 @@ static float hmzat(const Heightmap *hm, unsigned int x, unsigned int y) {
 	return CONFIG.baseheight + (CONFIG.zscale * hm->data[(hm->width * y) + x]);;
 }
 
-void Mesh(const Heightmap *hm, trix_mesh *mesh) {
+trix_result Mesh(const Heightmap *hm, trix_mesh *mesh) {
 	unsigned int x, y;
 	float az, bz, cz, dz, ez, fz, gz, hz;
 	trix_vertex vp, v1, v2, v3, v4;
 	trix_triangle ti, tj;
-
+	trix_result r;
+	
 	for (y = 0; y < hm->height; y++) {
 		for (x = 0; x < hm->width; x++) {
 			
@@ -232,11 +239,14 @@ void Mesh(const Heightmap *hm, trix_mesh *mesh) {
 			tj.b = v3;
 			tj.c = v2;
 			
-			// ought to attend to result, so we can stop
-			// if there is a problem with the mesh.
-			
-			(void)trixAddTriangle(mesh, &ti);
-			(void)trixAddTriangle(mesh, &tj);
+			// Add the triangles for this pixel to the surface mesh.
+			// Bail out of mesh generation if we can't add any more.
+			if ((r = trixAddTriangle(mesh, &ti)) != TRIX_OK) {
+				return r;
+			}
+			if ((r = trixAddTriangle(mesh, &tj)) != TRIX_OK) {
+				return r;
+			}
 			
 			// nothing left to do for this pixel unless we need to make walls
 			if (!CONFIG.base) {
@@ -248,30 +258,44 @@ void Mesh(const Heightmap *hm, trix_mesh *mesh) {
 			ti.a.z = 0; ti.b.z = 0; ti.c.z = 0;
 			tj.a = v2; tj.b = v3; tj.c = v4;
 			tj.a.z = 0; tj.b.z = 0; tj.c.z = 0;
-			(void)trixAddTriangle(mesh, &ti);
-			(void)trixAddTriangle(mesh, &tj);
+			if ((r = trixAddTriangle(mesh, &ti)) != TRIX_OK) {
+				return r;
+			}
+			if ((r = trixAddTriangle(mesh, &tj)) != TRIX_OK) {
+				return r;
+			}
 			
 			// north wall (vertex 1 to 2)
 			if (y == 0 || Masked(x, y - 1)) {
-				Wall(mesh, &v1, &v2);
+				if ((r = Wall(mesh, &v1, &v2)) != TRIX_OK) {
+					return r;
+				}
 			}
 			
 			// east wall (vertex 2 to 3)
 			if (x + 1 == hm->width || Masked(x + 1, y)) {
-				Wall(mesh, &v2, &v3);
+				if ((r = Wall(mesh, &v2, &v3)) != TRIX_OK) {
+					return r;
+				}
 			}
 			
 			// south wall (vertex 3 to 4)
 			if (y + 1 == hm->height || Masked(x, y + 1)) {
-				Wall(mesh, &v3, &v4);
+				if ((r = Wall(mesh, &v3, &v4)) != TRIX_OK) {
+					return r;
+				}
 			}
 			
 			// west wall (vertex 4 to 1)
 			if (x == 0 || Masked(x - 1, y)) {
-				Wall(mesh, &v4, &v1);
+				if ((r = Wall(mesh, &v4, &v1)) != TRIX_OK) {
+					return r;
+				}
 			}
 		}
 	}
+	
+	return TRIX_OK;
 }
 
 // returns 0 on success, nonzero otherwise
@@ -283,8 +307,10 @@ int HeightmapToSTL(Heightmap *hm) {
 		return (int)r;
 	}
 	
-	Mesh(hm, mesh);
-
+	if ((r = Mesh(hm, mesh)) != TRIX_OK) {
+		return (int)r;
+	}
+	
 	// writes to stdout if CONFIG.output is null, otherwise writes to path it names
 	if ((r = trixWrite(mesh, CONFIG.output, (CONFIG.ascii ? TRIX_STL_ASCII : TRIX_STL_BINARY))) != TRIX_OK) {
 		return (int)r;
@@ -396,6 +422,7 @@ int parseopts(int argc, char **argv) {
 
 int main(int argc, char **argv) {
 	Heightmap *hm = NULL;
+	trix_result r;
 	
 	if (parseopts(argc, argv)) {
 		fprintf(stderr, "option parsing failed\n");
@@ -428,7 +455,10 @@ int main(int argc, char **argv) {
 		}
 	}
 	
-	HeightmapToSTL(hm);
+	if ((r = HeightmapToSTL(hm)) != TRIX_OK) {
+		fprintf(stderr, "Heightmap conversion failed (%d)\n", (int)r);
+		return 1;
+	}
 	
 	FreeHeightmap(&hm);
 	
