@@ -126,9 +126,9 @@ trix_result Mesh(const Heightmap *hm, trix_mesh *mesh) {
 			| A | B | C |
 			|   |   |   |
 			+---1---2---+
-			|   |  /|   |
+			|   |I /|   |
 			| H | P | D |
-			|   |/  |   |
+			|   |/ J|   |
 			+---4---3---+
 			|   |   |   |
 			| G | F | E |
@@ -136,7 +136,7 @@ trix_result Mesh(const Heightmap *hm, trix_mesh *mesh) {
 			+---+---+---+
 			
 			Current pixel position is marked at center as P.
-			This pixel is output as two triangles, 124 and 234.
+			This pixel is output as two triangles, I and J.
 			Points 1, 2, 3, and 4 are offset half a unit from P.
 			Neighboring pixels are A, B, C, D, E, F, G, and H.
 			
@@ -152,7 +152,8 @@ trix_result Mesh(const Heightmap *hm, trix_mesh *mesh) {
 			
 			// determine elevation of neighboring pixels in order to
 			// to interpolate height of corners 1, 2, 3, and 4.
-			// -1 is used to flag edge/masked pixels to disregard.
+			// -1 is used to flag edge pixels to disregard.
+			// (Masked neighbors are still considered.)
 			
 			if (x == 0 || y == 0) {
 				az = -1;
