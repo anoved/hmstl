@@ -106,7 +106,7 @@ static float hmzat(const Heightmap *hm, unsigned int x, unsigned int y) {
 }
 
 // given four vertices and a mesh, add two triangles representing the quad with given corners
-trix_result Surface(trix_mesh *mesh, trix_vertex *v1, trix_vertex *v2, trix_vertex *v3, trix_vertex *v4) {
+trix_result Surface(trix_mesh *mesh, const trix_vertex *v1, const trix_vertex *v2, const trix_vertex *v3, const trix_vertex *v4) {
 	trix_triangle i, j;
 	trix_result r;
 	
