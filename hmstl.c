@@ -103,7 +103,7 @@ void Mesh(const Heightmap *hm, trix_mesh *mesh) {
 	unsigned int x, y;
 	float az, bz, cz, dz, ez, fz, gz, hz;
 	trix_vertex vp, v1, v2, v3, v4;
-	trix_triangle ti, tj, tk, tl;
+	trix_triangle ti, tj;
 
 	for (y = 0; y < hm->height; y++) {
 		for (x = 0; x < hm->width; x++) {
@@ -119,9 +119,9 @@ void Mesh(const Heightmap *hm, trix_mesh *mesh) {
 			| A | B | C |
 			|   |   |   |
 			+---1---2---+
-			|   |\I/|   |
-			| H |LPJ| D |
-			|   |/K\|   |
+			|   |  /|   |
+			| H | P | D |
+			|   |/  |   |
 			+---4---3---+
 			|   |   |   |
 			| G | F | E |
@@ -129,9 +129,8 @@ void Mesh(const Heightmap *hm, trix_mesh *mesh) {
 			+---+---+---+
 			
 			Current pixel position is marked at center as P.
-			This pixel is output as four triangles, I, J, K,
-			and L. Vertex P is common to all four triangles.
-			The remaining four vertices are 1, 2, 3, and 4.
+			This pixel is output as two triangles, 124 and 234.
+			Points 1, 2, 3, and 4 are offset half a unit from P.
 			Neighboring pixels are A, B, C, D, E, F, G, and H.
 			
 			Vertex 1 z is average of ABPH z
@@ -143,6 +142,10 @@ void Mesh(const Heightmap *hm, trix_mesh *mesh) {
 			outside the image, but do included masked values.
 			
 			*/
+			
+			// determine elevation of neightboring pixels in order to
+			// to interpolate height of corners 1, 2, 3, and 4.
+			// -1 is used to flag edge/masked pixels to disregard.
 			
 			if (x == 0 || y == 0) {
 				az = -1;
@@ -190,9 +193,9 @@ void Mesh(const Heightmap *hm, trix_mesh *mesh) {
 				hz = -1;
 			} else {
 				hz = hmzat(hm, x - 1, y);
-			}			
+			}
 			
-			// common pixel vertex p
+			// pixel vertex
 			vp.x = (float)x;
 			vp.y = (float)(hm->height - y);
 			vp.z = hmzat(hm, x, y);
@@ -218,42 +221,28 @@ void Mesh(const Heightmap *hm, trix_mesh *mesh) {
 			v4.z = avgnonneg(vp.z, hz, fz, gz);
 						
 			// Triangle I
-			// Vertices 2, 1, and P
-			ti.a = v2;
-			ti.b = v1;
-			ti.c = vp;
+			// vertices 1, 2, 4
+			ti.a = v4;
+			ti.b = v2;
+			ti.c = v1;
 			
 			// Triangle J
-			// Vertices 3, 2, and P
-			tj.a = v3;
-			tj.b = v2;
-			tj.c = vp;
-			
-			// Triangle K
-			// Vertices 4, 3, and P
-			tk.a = v4;
-			tk.b = v3;
-			tk.c = vp;
-			
-			// Triangle L
-			// Vertices 1, 4, and P
-			tl.a = v1;
-			tl.b = v4;
-			tl.c = vp;
+			// Vertices 2, 3, 4
+			tj.a = v4;
+			tj.b = v3;
+			tj.c = v2;
 			
 			// ought to attend to result, so we can stop
 			// if there is a problem with the mesh.
 			
 			(void)trixAddTriangle(mesh, &ti);
 			(void)trixAddTriangle(mesh, &tj);
-			(void)trixAddTriangle(mesh, &tk);
-			(void)trixAddTriangle(mesh, &tl);
 			
 			// nothing left to do for this pixel unless we need to make walls
 			if (!CONFIG.base) {
 				continue;
 			}
-		
+			
 			// bottom quad
 			ti.a = v1; ti.b = v2; ti.c = v4;
 			ti.a.z = 0; ti.b.z = 0; ti.c.z = 0;
