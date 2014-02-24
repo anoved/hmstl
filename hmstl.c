@@ -388,6 +388,8 @@ int parseopts(int argc, char **argv) {
 					case 'b':
 					case 'i':
 					case 'o':
+					case 'm':
+					case 't':
 						fprintf(stderr, "Option -%c requires an argument.\n", optopt);
 						break;
 					default:
