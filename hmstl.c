@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
 #ifndef S_SPLINT_S
 #include <unistd.h>
@@ -105,6 +106,20 @@ static float hmzat(const Heightmap *hm, unsigned int x, unsigned int y) {
 	return CONFIG.baseheight + (CONFIG.zscale * hm->data[(hm->width * y) + x]);;
 }
 
+// Calculate the unit normal vector
+static int addNormals(trix_triangle* t) {
+	// Cross Product
+	t->n.x = (t->b.y - t->a.y) * (t->c.z - t->a.z) - (t->b.z - t->a.z) * (t->c.y - t->a.y);
+	t->n.y = (t->b.z - t->a.z) * (t->c.x - t->a.x) - (t->b.x - t->a.x) * (t->c.z - t->a.z);
+	t->n.z = (t->b.x - t->a.x) * (t->c.y - t->a.y) - (t->b.y - t->a.y) * (t->c.x - t->a.x);
+
+	// Normalize
+	float magnitude = sqrt(t->n.x * t->n.x + t->n.y * t->n.y + t->n.z * t->n.z);
+	t->n.x /= magnitude;
+	t->n.y /= magnitude;
+	t->n.z /= magnitude;
+}
+
 // given four vertices and a mesh, add two triangles representing the quad with given corners
 trix_result Surface(trix_mesh *mesh, const trix_vertex *v1, const trix_vertex *v2, const trix_vertex *v3, const trix_vertex *v4) {
 	trix_triangle i, j;
@@ -113,10 +128,12 @@ trix_result Surface(trix_mesh *mesh, const trix_vertex *v1, const trix_vertex *v
 	i.a = *v4;
 	i.b = *v2;
 	i.c = *v1;
+	addNormals(&i);
 	
 	j.a = *v4;
 	j.b = *v3;
 	j.c = *v2;
+	addNormals(&j);
 	
 	if ((r = trixAddTriangle(mesh, &i)) != TRIX_OK) {
 		return r;
